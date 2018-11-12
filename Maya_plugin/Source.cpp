@@ -136,7 +136,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 	MStatus status;
 	MFnMesh fn(plug.node(), &status);
 
-	// test change
+	// test change 2
 	
 	if (status == MS::kSuccess)
 	{
