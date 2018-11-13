@@ -22,13 +22,17 @@ private:
 
 	void openFileMap();
 	void openHeadTailFileMap();
-	bool fileMapFound;
+	bool fileMapFound = true;
 
 public:
 	comLib();
 	~comLib();
 
 	bool test();
-
+	void recieve(void* data);
 };
 
+struct Header {
+	int msgType;
+	int length;
+};

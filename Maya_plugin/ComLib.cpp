@@ -85,3 +85,20 @@ void ComLib::test()
 
 	delete[] msg;
 }
+
+void ComLib::send(const void * data, size_t length)
+{
+
+	Header h;
+	h.length = length; // msg length
+	size_t headerSize = sizeof(h);
+
+	memcpy(pBuf, &h, headerSize);
+
+	*head += headerSize;
+
+	memcpy(pBuf + *head, data, length);
+
+	*head += length;
+
+}

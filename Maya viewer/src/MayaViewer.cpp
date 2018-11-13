@@ -154,7 +154,9 @@ void MayaViewer::update(float elapsedTime)
 
 	_scene->findNode("Plane")->rotateX(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
 
-	if (comLib.test() && onceBool)
+	getMayaData();
+
+	if (comlib.test() && onceBool)
 	{
 		_wireframe = !_wireframe;
 		onceBool = false;
@@ -185,6 +187,22 @@ bool MayaViewer::drawScene(Node* node)
 bool MayaViewer::test()
 {
 	return false;
+}
+
+void MayaViewer::getMayaData()
+{
+
+	char* data = new char[BUFF_SIZE];
+	comlib.recieve(data);
+
+	// data will be header + information
+	// use msgtype in header to determine how to interpret information
+
+	// create new data type for specified information and pass it on to correct function
+	// createMesh(dataType);
+	// etc
+
+	delete[] data;
 }
 
 void MayaViewer::keyEvent(Keyboard::KeyEvent evt, int key)

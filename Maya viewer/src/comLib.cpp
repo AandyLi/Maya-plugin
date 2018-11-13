@@ -16,6 +16,8 @@ comLib::comLib()
 	head = (size_t*)sharedHeadTail;
 	tail = (size_t*)sharedHeadTail + 1;
 
+	fileMapFound = true;
+
 }
 
 void comLib::openFileMap()
@@ -90,4 +92,26 @@ bool comLib::test()
 	}
 
 	return false;
+}
+
+void comLib::recieve(void* data)
+{
+	if (fileMapFound)
+	{
+
+		if (*tail != *head)
+		{
+
+			// get header data
+			Header h;
+			size_t headerSize = sizeof(h);
+
+			memcpy(&h, pBuf + *tail, headerSize);
+
+
+			// copy data and header from pBuf to data
+			memcpy(data, pBuf + *tail, h.length + headerSize);
+		}
+	}
+
 }

@@ -28,8 +28,10 @@ private:
 	bool onceBool = true;
 	bool test();
 
+	void getMayaData();
+
 	bool MayaViewer::initializeMaterials(Node* node);
-	comLib comLib;
+	comLib comlib;
 public:
 
     /**

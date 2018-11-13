@@ -14,7 +14,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 MCallbackId meshNodeCallbackID;
 
-//ComLib* comLib;
+ComLib* comLib;
 
 MString getNodeName(MObject &node) {
 	MString nodeName;
@@ -136,7 +136,6 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 	MStatus status;
 	MFnMesh fn(plug.node(), &status);
 
-	// test change 2
 	
 	if (status == MS::kSuccess)
 	{
@@ -166,7 +165,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		MGlobal::displayInfo(points);
 
-		// Get all vertices
+		// Get all vertices and store them in meshinfo
 		for (int i = 0; i < pts.length(); i++)
 		{
 			Vertex vtx;
@@ -174,7 +173,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 			vtx.y = pts[i].y;
 			vtx.z = pts[i].z;
 
-			mesh.vertices.push_back(vtx);
+			//mesh.vertices.push_back(vtx);
 		}
 
 		mesh.nrOfVertices = pts.length();
@@ -190,10 +189,10 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		int* triCountsArr = new int[triangleCounts.length()];
 		triangleCounts.get(triCountsArr);
 
-		int* triVertsArr = new int[triangleVertices.length()]; // important!
+		int* triVertsArr = new int[triangleVertices.length()]; // important! (probably not needed, remove later)
 		triangleVertices.get(triVertsArr);
 
-		mesh.nrOfTriVertices = triangleVertices.length();
+		//mesh.nrOfTriVertices = triangleVertices.length();
 
 		// Store indices in vector
 		for (int i = 0; i < triangleVertices.length(); i++)
@@ -234,6 +233,16 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		//myCallbackArray.remove(meshNodeCallbackID);
 		MGlobal::displayInfo(MString("Callback removed"));
+
+		size_t meshSize = sizeof(mesh);
+
+		char* data = new char[meshSize];
+		memcpy(data, &mesh, meshSize);
+
+		comLib->send(data, meshSize);
+
+		delete[] data;
+
 	}
 }
 
@@ -436,7 +445,7 @@ EXPORT MStatus initializePlugin(MObject obj)
 	// if res == kSuccess then the plugin has been loaded, 
 	// otherwise is has not.
 
-	//comLib = new ComLib();
+	comLib = new ComLib();
 
 
 	return res;
@@ -453,7 +462,7 @@ EXPORT MStatus uninitializePlugin(MObject obj)
 	// returning...
 	MMessage::removeCallbacks(myCallbackArray);
 
-	//delete comLib;
+	delete comLib;
 
 	MGlobal::displayInfo("Maya plugin unloaded!");
 
