@@ -15,5 +15,10 @@ struct MeshInfo {
 	int nrOfVertices;
 	int nrOfTriVertices;
 	vector<int> indices;
+	int msgType;
+};
 
+struct Header {
+	int msgType;
+	int length;
 };

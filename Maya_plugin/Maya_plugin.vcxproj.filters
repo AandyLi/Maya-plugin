@@ -21,7 +21,7 @@
     <ClInclude Include="ComLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Data.h">
+    <ClInclude Include="..\Shared\Data.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

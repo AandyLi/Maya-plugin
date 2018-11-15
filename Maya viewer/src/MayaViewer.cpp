@@ -198,6 +198,19 @@ void MayaViewer::getMayaData()
 	// data will be header + information
 	// use msgtype in header to determine how to interpret information
 
+	Header h;
+
+	// Get header
+	memcpy(&h, data, sizeof(h));
+
+	switch (h.msgType)
+	{
+	case 1:
+		int a = 2;
+		break;
+	}
+
+
 	// create new data type for specified information and pass it on to correct function
 	// createMesh(dataType);
 	// etc

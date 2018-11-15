@@ -5,6 +5,7 @@
 
 comLib::comLib()
 {
+	fileMapFound = true;
 	// Open primary buffer
 	openFileMap();
 
@@ -16,7 +17,6 @@ comLib::comLib()
 	head = (size_t*)sharedHeadTail;
 	tail = (size_t*)sharedHeadTail + 1;
 
-	fileMapFound = true;
 
 }
 
@@ -112,6 +112,23 @@ void comLib::recieve(void* data)
 			// copy data and header from pBuf to data
 			memcpy(data, pBuf + *tail, h.length + headerSize);
 		}
-	}
+	} 
+	
+	// retry
+	retryToGetFileMap();
+}
 
+void comLib::retryToGetFileMap()
+{
+	fileMapFound = true;
+	// Open primary buffer
+	openFileMap();
+
+	// Keep track of head and tail using a shared memory location
+	openHeadTailFileMap();
+
+	// Assign head and tail to shared memory
+
+	head = (size_t*)sharedHeadTail;
+	tail = (size_t*)sharedHeadTail + 1;
 }

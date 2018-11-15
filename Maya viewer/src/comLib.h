@@ -6,6 +6,7 @@
 #include <conio.h>
 #include <tchar.h>
 #include <string>
+#include <Data.h>
 using namespace std;
 #define BUFF_SIZE 1 * 1 << 20
 class comLib
@@ -24,15 +25,12 @@ private:
 	void openHeadTailFileMap();
 	bool fileMapFound = true;
 
+	void retryToGetFileMap();
+
 public:
 	comLib();
 	~comLib();
 
 	bool test();
 	void recieve(void* data);
-};
-
-struct Header {
-	int msgType;
-	int length;
 };

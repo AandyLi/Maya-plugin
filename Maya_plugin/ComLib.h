@@ -31,7 +31,3 @@ public:
 	void send(const void * data, size_t length);
 };
 
-struct Header {
-	int msgType;
-	int length;
-};

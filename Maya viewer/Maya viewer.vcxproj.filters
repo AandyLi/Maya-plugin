@@ -81,6 +81,9 @@
     <ClInclude Include="src\comLib.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\Shared\Data.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\MayaViewer.cpp">

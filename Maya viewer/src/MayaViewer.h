@@ -3,6 +3,7 @@
 
 #include "gameplay.h"
 #include "comLib.h"
+#include "Data.h"
 
 
 using namespace gameplay;

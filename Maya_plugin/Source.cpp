@@ -9,8 +9,15 @@
 
 using namespace std;
 MCallbackIdArray myCallbackArray;
+
+// Declarations start ***************************************
 void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void *clientData);
+
 void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void *clientData);
+
+void prepareMeshMessage(MeshInfo mesh, int msgType);
+
+// Declarations end *****************************************
 
 MCallbackId meshNodeCallbackID;
 
@@ -173,7 +180,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 			vtx.y = pts[i].y;
 			vtx.z = pts[i].z;
 
-			//mesh.vertices.push_back(vtx);
+			mesh.vertices.push_back(vtx);
 		}
 
 		mesh.nrOfVertices = pts.length();
@@ -192,7 +199,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		int* triVertsArr = new int[triangleVertices.length()]; // important! (probably not needed, remove later)
 		triangleVertices.get(triVertsArr);
 
-		//mesh.nrOfTriVertices = triangleVertices.length();
+		mesh.nrOfTriVertices = triangleVertices.length();
 
 		// Store indices in vector
 		for (int i = 0; i < triangleVertices.length(); i++)
@@ -234,16 +241,30 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		//myCallbackArray.remove(meshNodeCallbackID);
 		MGlobal::displayInfo(MString("Callback removed"));
 
-		size_t meshSize = sizeof(mesh);
+		mesh.msgType = 1;
 
-		char* data = new char[meshSize];
-		memcpy(data, &mesh, meshSize);
+		prepareMeshMessage(mesh, 1);
 
-		comLib->send(data, meshSize);
-
-		delete[] data;
-
+		
 	}
+}
+
+void prepareMeshMessage(MeshInfo mesh, int msgType) {
+
+	size_t meshSize = sizeof(mesh);
+
+	Header h;
+	h.msgType = msgType;
+	h.length = meshSize;
+	size_t headerSize = sizeof(h);
+
+	char* data = new char[meshSize + headerSize];
+	memcpy(data, &h, headerSize);
+	memcpy(data + headerSize, &mesh, meshSize);
+
+	comLib->send(data, meshSize + headerSize);
+
+	delete[] data;
 }
 
 void nodeRenamed(MObject &node, const MString &str, void *clientData) {

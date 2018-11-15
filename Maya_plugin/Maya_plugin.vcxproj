@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Shared\Data.h" />
     <ClInclude Include="ComLib.h" />
-    <ClInclude Include="Data.h" />
     <ClInclude Include="Maya_Includes.h" />
   </ItemGroup>
   <ItemGroup>
@@ -122,6 +122,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;MAYA_PLUGIN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\andre\OneDrive\Visual Studio 2015\Projects\Maya_plugin_GamePlay3D\Shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
