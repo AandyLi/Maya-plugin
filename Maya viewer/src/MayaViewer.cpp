@@ -48,7 +48,6 @@ bool MayaViewer::addMesh()
 	mesh->setPrimitiveType(Mesh::TRIANGLES);
 	mesh->setVertexData(vertices, 0, 6);
 
-
 	Model* model = Model::create(mesh);
 	Material* mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "VERTEX_COLOR");
 
@@ -60,7 +59,6 @@ bool MayaViewer::addMesh()
 	mat->setParameterAutoBinding("u_inverseTransposeWorldViewMatrix", "INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX");
 	// Set the ambient color of the material.
 	mat->getParameter("u_ambientColor")->setValue(Vector3(0.2f, 0.2f, 0.2f));
-
 
 
 
@@ -82,14 +80,112 @@ bool MayaViewer::addMesh()
 
 	SAFE_RELEASE(model);
 
-
-
 	// test change 1
 
 	return true;
+	
+}
 
-	
-	
+void MayaViewer::createMesh(char* data)
+{
+	Header h;
+	size_t headerSize = sizeof(h);
+	memcpy(&h, data, headerSize);
+
+	MeshInfo newMesh;
+
+	memcpy(&newMesh, data + headerSize, h.length);
+
+
+	// Create 3 vertices. Each vertex has position (x, y, z) and color (red, green, blue)
+	float vertices[] =
+	{
+		-0.5, 0.5, 0.0f,     1.0f, 0.0f, 0.0f,
+		-0.5, -0.5, 0.0f,     0.0f, 1.0f, 0.0f,
+		0.5, -0.5, 0.0f,     0.0f, 0.0f, 1.0f,
+		// 2nd tri for quad
+		0.5, -0.5, 0.0f,     0.0f, 0.0f, 1.0f,
+		0.5, 0.5, 0.0f,     0.0f, 1.0f, 0.0f,
+		-0.5, 0.5, 0.0f,     1.0f, 0.0f, 0.0f,
+
+	};
+
+
+	int vtxCount = newMesh.nrOfTriVertices;
+
+	float* arr = new float[vtxCount * 2];
+
+	float a = newMesh.vertices[newMesh.indices[0]].x;
+
+
+	for (int i = 0; i < (vtxCount * 2); i++)
+	{
+		arr[i] = newMesh.vertices[newMesh.indices[i]].x;
+		i++;
+		arr[i] = newMesh.vertices[newMesh.indices[i]].y;
+		i++;
+		arr[i] = newMesh.vertices[newMesh.indices[i]].z;
+
+		// debug only for temp colors
+		i++;
+		arr[i] = 1.0f;
+		i++;
+		arr[i] = 0.0f;
+		i++;
+		arr[i] = 0.0f;
+		i++;
+
+	}
+
+
+	VertexFormat::Element elements[] =
+	{
+		VertexFormat::Element(VertexFormat::POSITION, 3),
+		VertexFormat::Element(VertexFormat::NORMAL, 3)
+	};
+
+	Mesh* mesh = Mesh::createMesh(VertexFormat(elements, 2), vtxCount, false);
+
+	if (mesh == NULL)
+	{
+		GP_ERROR("Failed to create mesh.");
+		//return NULL;
+	}
+
+	mesh->setPrimitiveType(Mesh::TRIANGLES);
+	mesh->setVertexData(arr, 0, vtxCount);
+
+	Model* model = Model::create(mesh);
+	Material* mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "VERTEX_COLOR");
+
+	SAFE_RELEASE(mesh);
+
+	// These parameters are normally set in a .material file but this example sets them programmatically.
+	// Bind the uniform "u_worldViewProjectionMatrix" to use the WORLD_VIEW_PROJECTION_MATRIX from the scene's active camera and the node that the model belongs to.
+	mat->setParameterAutoBinding("u_worldViewProjectionMatrix", "WORLD_VIEW_PROJECTION_MATRIX");
+	mat->setParameterAutoBinding("u_inverseTransposeWorldViewMatrix", "INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX");
+	// Set the ambient color of the material.
+	mat->getParameter("u_ambientColor")->setValue(Vector3(0.2f, 0.2f, 0.2f));
+
+
+	// Create a white light.
+
+	Vector3 col(0.75f, 0.75f, 0.75f);
+	Light* light = Light::createPoint(col, 300.0f);
+	Node* lightNode = _scene->addNode("light");
+	lightNode->setLight(light);
+	// Release the light because the node now holds a reference to it.
+	SAFE_RELEASE(light);
+	lightNode->translateUp(2.0f);
+	// Bind the light's color and direction to the material.
+	//mat->getParameter("u_directionalLightColor[0]")->setValue(lightNode->getLight()->getColor());
+	//mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
+
+	_scene->addNode("newMesh")->setDrawable(model);
+
+
+	SAFE_RELEASE(model);
+
 }
 
 void MayaViewer::initialize()
@@ -189,6 +285,8 @@ bool MayaViewer::test()
 	return false;
 }
 
+
+
 void MayaViewer::getMayaData()
 {
 
@@ -206,7 +304,7 @@ void MayaViewer::getMayaData()
 	switch (h.msgType)
 	{
 	case 1:
-		int a = 2;
+		createMesh(data);
 		break;
 	}
 

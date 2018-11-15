@@ -89,7 +89,7 @@ void ComLib::test()
 void ComLib::send(const void * data, size_t length)
 {
 
-	//Header h;
+	Header h;
 	//h.length = length; // msg length
 	//size_t headerSize = sizeof(h);
 

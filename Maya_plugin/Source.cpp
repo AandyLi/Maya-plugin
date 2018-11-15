@@ -243,6 +243,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		mesh.msgType = 1;
 
+
 		prepareMeshMessage(mesh, 1);
 
 		
@@ -258,11 +259,14 @@ void prepareMeshMessage(MeshInfo mesh, int msgType) {
 	h.length = meshSize;
 	size_t headerSize = sizeof(h);
 
-	char* data = new char[meshSize + headerSize];
+	char* data = new char[meshSize + headerSize + sizeof(Vertex) * mesh.nrOfVertices];
 	memcpy(data, &h, headerSize);
 	memcpy(data + headerSize, &mesh, meshSize);
+	// cant copy vector so we copy vector contents (Vertex)
+	memcpy(data + headerSize + meshSize, mesh.vertices.data(), sizeof(Vertex) * mesh.nrOfVertices);
 
-	comLib->send(data, meshSize + headerSize);
+	comLib->send(data, meshSize + headerSize + sizeof(Vertex) * mesh.nrOfVertices);
+
 
 	delete[] data;
 }

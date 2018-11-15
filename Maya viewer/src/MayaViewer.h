@@ -22,6 +22,7 @@ private:
 	bool drawScene(Node* node);
 
 	bool addMesh();
+	void createMesh(char* data);
 
 	Scene* _scene;
 	bool _wireframe;
