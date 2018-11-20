@@ -109,24 +109,24 @@ void comLib::recieve(void* data)
 			memcpy(&h, pBuf + *tail, headerSize);
 
 			// debug
-			MeshInfo m;
+			//MeshInfo m;
 
-			memcpy(&m, pBuf + headerSize, h.length);
+			//memcpy(&m, pBuf + headerSize, h.length);
 
-			vector<Vertex> vt;
+			//vector<Vertex> vt;
 
-			Vertex v;
-			for (int i = 0; i < m.nrOfVertices; i++)
-			{
-				// vector content (Vertex) has to be added back into a new vector
-				memcpy(&v, pBuf + headerSize + h.length + (sizeof(Vertex) * i), sizeof(Vertex));
-				vt.push_back(v);
-			}
+			//Vertex v;
+			//for (int i = 0; i < m.nrOfVertices; i++)
+			//{
+			//	// vector content (Vertex) has to be added back into a new vector
+			//	memcpy(&v, pBuf + headerSize + h.length + (sizeof(Vertex) * i), sizeof(Vertex));
+			//	vt.push_back(v);
+			//}
 
 			// copy data and header from pBuf to data
 			memcpy(data, pBuf + *tail, h.length + headerSize);
 
-			*tail += h.length + headerSize;
+			//*tail += h.length + headerSize;
 		}
 	} 
 	

@@ -252,20 +252,31 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 void prepareMeshMessage(MeshInfo mesh, int msgType) {
 
+
+	// create local mesh info holding all vector stuff
+	// dont copy over struct containing vector
 	size_t meshSize = sizeof(mesh);
 
 	Header h;
 	h.msgType = msgType;
 	h.length = meshSize;
 	size_t headerSize = sizeof(h);
+	size_t vtxSize = sizeof(Vertex) * mesh.nrOfVertices; // test
+	h.length += vtxSize;
 
-	char* data = new char[meshSize + headerSize + sizeof(Vertex) * mesh.nrOfVertices];
+	size_t indiceSize = sizeof(int) * mesh.nrOfTriVertices;
+	h.length += indiceSize;
+
+	char* data = new char[meshSize + headerSize + vtxSize + indiceSize];
 	memcpy(data, &h, headerSize);
 	memcpy(data + headerSize, &mesh, meshSize);
 	// cant copy vector so we copy vector contents (Vertex)
-	memcpy(data + headerSize + meshSize, mesh.vertices.data(), sizeof(Vertex) * mesh.nrOfVertices);
+	memcpy(data + headerSize + meshSize, mesh.vertices.data(), vtxSize);
+	// copy indice array
+	memcpy(data + headerSize + meshSize + vtxSize, mesh.indices.data(), indiceSize);
 
-	comLib->send(data, meshSize + headerSize + sizeof(Vertex) * mesh.nrOfVertices);
+
+	comLib->send(data, headerSize + h.length);
 
 
 	delete[] data;

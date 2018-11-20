@@ -22,3 +22,8 @@ struct Header {
 	int msgType;
 	int length;
 };
+
+struct vectorData {
+	Vertex v;
+	int indices;
+};
