@@ -11,10 +11,10 @@ struct Vertex {
 
 
 struct MeshInfo {
-	vector<Vertex> vertices;
+
 	int nrOfVertices;
 	int nrOfTriVertices;
-	vector<int> indices;
+
 	int msgType;
 };
 
@@ -24,6 +24,6 @@ struct Header {
 };
 
 struct vectorData {
-	Vertex v;
-	int indices;
+	vector<Vertex> v;
+	vector<int> indices;
 };

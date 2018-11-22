@@ -15,7 +15,7 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 
 void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void *clientData);
 
-void prepareMeshMessage(MeshInfo mesh, int msgType);
+void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType);
 
 // Declarations end *****************************************
 
@@ -149,6 +149,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		MGlobal::displayInfo(MString("Status  ==  Succsess ") + getNodeName(plug.node()));
 
 		MeshInfo mesh;
+		vectorData vD;
 
 		MFloatPointArray pts;
 		fn.getPoints(pts);
@@ -172,15 +173,15 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		MGlobal::displayInfo(points);
 
+		Vertex v;
 		// Get all vertices and store them in meshinfo
 		for (int i = 0; i < pts.length(); i++)
 		{
-			Vertex vtx;
-			vtx.x = pts[i].x;
-			vtx.y = pts[i].y;
-			vtx.z = pts[i].z;
+			v.x = pts[i].x;
+			v.y = pts[i].y;
+			v.z = pts[i].z;
 
-			mesh.vertices.push_back(vtx);
+			vD.v.push_back(v);
 		}
 
 		mesh.nrOfVertices = pts.length();
@@ -201,10 +202,13 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		mesh.nrOfTriVertices = triangleVertices.length();
 
-		// Store indices in vector
-		for (int i = 0; i < triangleVertices.length(); i++)
+
+		// Store indices in int array
+		int temp;
+		for (int i = 0; i < mesh.nrOfTriVertices; i++)
 		{
-			mesh.indices.push_back(triangleVertices[i]);
+			temp = triangleVertices[i];
+			vD.indices.push_back(temp);
 		}
 
 		// triangleCounts
@@ -244,37 +248,49 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		mesh.msgType = 1;
 
 
-		prepareMeshMessage(mesh, 1);
+		prepareMeshMessage(mesh, vD, 1);
 
 		
 	}
 }
 
-void prepareMeshMessage(MeshInfo mesh, int msgType) {
-
+void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType) {
 
 	// create local mesh info holding all vector stuff
 	// dont copy over struct containing vector
-	size_t meshSize = sizeof(mesh);
+
 
 	Header h;
-	h.msgType = msgType;
-	h.length = meshSize;
+
+
 	size_t headerSize = sizeof(h);
-	size_t vtxSize = sizeof(Vertex) * mesh.nrOfVertices; // test
-	h.length += vtxSize;
-
+	size_t meshSize   = sizeof(mesh);
+	size_t vtxSize    = sizeof(Vertex) * mesh.nrOfVertices; // test
 	size_t indiceSize = sizeof(int) * mesh.nrOfTriVertices;
-	h.length += indiceSize;
+	size_t localHead  = 0;
 
-	char* data = new char[meshSize + headerSize + vtxSize + indiceSize];
+	h.msgType = msgType;
+	h.length = meshSize + vtxSize + indiceSize;
+
+
+
+	char* data = new char[headerSize + h.length];
+
+	// Header
 	memcpy(data, &h, headerSize);
-	memcpy(data + headerSize, &mesh, meshSize);
-	// cant copy vector so we copy vector contents (Vertex)
-	memcpy(data + headerSize + meshSize, mesh.vertices.data(), vtxSize);
-	// copy indice array
-	memcpy(data + headerSize + meshSize + vtxSize, mesh.indices.data(), indiceSize);
+	localHead   += headerSize;
 
+	// Meshinfo
+	memcpy(data + localHead, &mesh, meshSize);
+	localHead   += meshSize;
+
+	// Vertices
+	memcpy(data + localHead, vD.v.data(), vtxSize);
+	localHead   += vtxSize;
+
+	// Indices
+	memcpy(data + localHead, vD.indices.data(), indiceSize);
+	localHead   += indiceSize;
 
 	comLib->send(data, headerSize + h.length);
 

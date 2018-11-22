@@ -108,10 +108,15 @@ void comLib::recieve(void* data)
 
 			memcpy(&h, pBuf + *tail, headerSize);
 
-			// debug
+			////debug
 			//MeshInfo m;
 
-			//memcpy(&m, pBuf + headerSize, h.length);
+			//memcpy(&m, pBuf + headerSize, sizeof(MeshInfo));
+
+			//vectorData vD;
+			//vD.v = new Vertex[m.nrOfVertices];
+			//vD.indices = new int[m.nrOfTriVertices];
+			//memcpy(&vD, pBuf + headerSize + sizeof(MeshInfo), sizeof(vectorData));
 
 			//vector<Vertex> vt;
 
@@ -119,14 +124,14 @@ void comLib::recieve(void* data)
 			//for (int i = 0; i < m.nrOfVertices; i++)
 			//{
 			//	// vector content (Vertex) has to be added back into a new vector
-			//	memcpy(&v, pBuf + headerSize + h.length + (sizeof(Vertex) * i), sizeof(Vertex));
+			//	memcpy(&v, pBuf + headerSize + sizeof(MeshInfo) + (sizeof(Vertex) * i), sizeof(Vertex));
 			//	vt.push_back(v);
 			//}
 
 			// copy data and header from pBuf to data
 			memcpy(data, pBuf + *tail, h.length + headerSize);
 
-			//*tail += h.length + headerSize;
+			*tail += h.length + headerSize;
 		}
 	} 
 	

@@ -29,6 +29,7 @@ private:
 
 	bool onceBool = true;
 	bool test();
+	bool test2 = false;
 
 	void getMayaData();
 

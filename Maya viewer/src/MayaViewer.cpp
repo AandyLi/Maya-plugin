@@ -88,109 +88,122 @@ bool MayaViewer::addMesh()
 
 void MayaViewer::createMesh(char* data)
 {
-	Header h;
-	size_t headerSize = sizeof(h);
-	memcpy(&h, data, headerSize);
+	size_t headerSize   = sizeof(Header);
+	size_t meshInfoSize = sizeof(MeshInfo);
+	size_t localHead    = headerSize;
 
 	MeshInfo newMesh;
+	memcpy(&newMesh, data + localHead, meshInfoSize);
+	localHead += meshInfoSize;
 
 
-	memcpy(&newMesh, data + headerSize, h.length);
+	size_t vtxSize      = sizeof(Vertex) * newMesh.nrOfVertices; // test
+	size_t indiceSize   = sizeof(int) * newMesh.nrOfTriVertices;
 
 
-	/*int vtxCount = newMesh.nrOfTriVertices;*/
+	int vtxCount        = newMesh.nrOfVertices;
+	int indiceCount     = newMesh.nrOfTriVertices;
 
-	//float* arr = new float[vtxCount * 2 * 3];
-
-	//// get vertex
-	//vector<Vertex> vt;
-	//Vertex v;
-	//for (int i = 0; i < newMesh.nrOfVertices; i++)
-	//{
-	//	// vector content (Vertex) has to be added back into a new vector
-	//	memcpy(&v, data + headerSize + sizeof(newMesh) + (sizeof(Vertex) * i), sizeof(Vertex));
-	//	vt.push_back(v);
-	//}
-
-	//// get indices
-	//vector<int> indices;
-	//int a;
-	//for (int i = 0; i < vtxCount; i++)
-	//{
-	//	memcpy(&a, data + headerSize + sizeof(newMesh) + (sizeof(Vertex) * newMesh.nrOfVertices) + (sizeof(int) * i), sizeof(int));
-	//	indices.push_back(a);
-	//}
-
-	//int j = 0;
-	//for (int i = 0; i < vtxCount; i++)
-	//{
-	//	arr[j] = vt[indices[i]].x;
-	//	j++;		
-	//	arr[j] = vt[indices[i]].y;
-	//	j++;		
-	//	arr[j] = vt[indices[i]].z;
-
-	//	// debug only for temp colors
-	//	j++;
-	//	arr[j] = 1.0f;
-	//	j++;
-	//	arr[j] = 0.0f;
-	//	j++;
-	//	arr[j] = 0.0f;
-	//	j++;
-
-	//}
+	float* vertices = new float[indiceCount * 2 * 3];
 
 
-	//VertexFormat::Element elements[] =
-	//{
-	//	VertexFormat::Element(VertexFormat::POSITION, 3),
-	//	VertexFormat::Element(VertexFormat::NORMAL, 3)
-	//};
+	// get vertices
+	vector<Vertex> vtxVector;
+	size_t vtxStructSize = sizeof(Vertex);
 
-	//Mesh* mesh = Mesh::createMesh(VertexFormat(elements, 2), vtxCount, false);
+	Vertex v;
+	for (int i = 0; i < vtxCount; i++)
+	{
+		// vector content (Vertex) has to be added back into a new vector
+		memcpy(&v, data + localHead + (vtxStructSize * i), vtxStructSize);
+		vtxVector.push_back(v);
+	}
+	
+	localHead += vtxStructSize * vtxCount;
 
-	//if (mesh == NULL)
-	//{
-	//	GP_ERROR("Failed to create mesh.");
-	//	//return NULL;
-	//}
+	// get indices
+	vector<int> indicesVector;
+	size_t sizeOfInt = sizeof(int);
 
-	//mesh->setPrimitiveType(Mesh::TRIANGLES);
-	//mesh->setVertexData(arr, 0, vtxCount);
+	int indice;
+	for (int i = 0; i < indiceCount; i++)
+	{
+		memcpy(&indice, data + localHead + (sizeOfInt * i), sizeOfInt);
+		indicesVector.push_back(indice);
+	}
 
-	//Model* model = Model::create(mesh);
-	//Material* mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "VERTEX_COLOR");
+	localHead += indiceCount * sizeOfInt;
 
-	//SAFE_RELEASE(mesh);
+	int j = 0;
+	for (int i = 0; i < indiceCount; i++)
+	{
+		vertices[j] = vtxVector[indicesVector[i]].x;
+		j++;		
+		vertices[j] = vtxVector[indicesVector[i]].y;
+		j++;		
+		vertices[j] = vtxVector[indicesVector[i]].z;
 
-	//// These parameters are normally set in a .material file but this example sets them programmatically.
-	//// Bind the uniform "u_worldViewProjectionMatrix" to use the WORLD_VIEW_PROJECTION_MATRIX from the scene's active camera and the node that the model belongs to.
-	//mat->setParameterAutoBinding("u_worldViewProjectionMatrix", "WORLD_VIEW_PROJECTION_MATRIX");
-	//mat->setParameterAutoBinding("u_inverseTransposeWorldViewMatrix", "INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX");
-	//// Set the ambient color of the material.
-	//mat->getParameter("u_ambientColor")->setValue(Vector3(0.2f, 0.2f, 0.2f));
+		// debug only for temp colors
+		j++;
+		vertices[j] = 1.0f;
+		j++;
+		vertices[j] = 0.0f;
+		j++;
+		vertices[j] = 0.0f;
+		j++;
 
-
-	//// Create a white light.
-
-	//Vector3 col(0.75f, 0.75f, 0.75f);
-	//Light* light = Light::createPoint(col, 300.0f);
-	//Node* lightNode = _scene->addNode("light");
-	//lightNode->setLight(light);
-	//// Release the light because the node now holds a reference to it.
-	//SAFE_RELEASE(light);
-	//lightNode->translateUp(2.0f);
-	//// Bind the light's color and direction to the material.
-	////mat->getParameter("u_directionalLightColor[0]")->setValue(lightNode->getLight()->getColor());
-	////mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
-
-	//_scene->addNode("newMesh")->setDrawable(model);
+	}
 
 
-	//SAFE_RELEASE(model);
+	VertexFormat::Element elements[] =
+	{
+		VertexFormat::Element(VertexFormat::POSITION, 3),
+		VertexFormat::Element(VertexFormat::NORMAL, 3)
+	};
 
-	//delete[] arr;
+	Mesh* mesh = Mesh::createMesh(VertexFormat(elements, 2), indiceCount, false);
+
+	if (mesh == NULL)
+	{
+		GP_ERROR("Failed to create mesh.");
+		//return NULL;
+	}
+
+	mesh->setPrimitiveType(Mesh::TRIANGLES);
+	mesh->setVertexData(vertices, 0, indiceCount);
+
+	Model* model = Model::create(mesh);
+	Material* mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "VERTEX_COLOR");
+
+	SAFE_RELEASE(mesh);
+
+	// These parameters are normally set in a .material file but this example sets them programmatically.
+	// Bind the uniform "u_worldViewProjectionMatrix" to use the WORLD_VIEW_PROJECTION_MATRIX from the scene's active camera and the node that the model belongs to.
+	mat->setParameterAutoBinding("u_worldViewProjectionMatrix", "WORLD_VIEW_PROJECTION_MATRIX");
+	mat->setParameterAutoBinding("u_inverseTransposeWorldViewMatrix", "INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX");
+	// Set the ambient color of the material.
+	mat->getParameter("u_ambientColor")->setValue(Vector3(0.2f, 0.2f, 0.2f));
+
+
+	// Create a white light.
+
+	Vector3 col(0.75f, 0.75f, 0.75f);
+	Light* light = Light::createPoint(col, 300.0f);
+	Node* lightNode = _scene->addNode("light");
+	lightNode->setLight(light);
+	// Release the light because the node now holds a reference to it.
+	SAFE_RELEASE(light);
+	lightNode->translateUp(2.0f);
+	// Bind the light's color and direction to the material.
+	//mat->getParameter("u_directionalLightColor[0]")->setValue(lightNode->getLight()->getColor());
+	//mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
+
+	_scene->addNode("newMesh")->setDrawable(model);
+
+
+	SAFE_RELEASE(model);
+
+	delete[] vertices;
 }
 
 void MayaViewer::initialize()
@@ -217,7 +230,6 @@ void MayaViewer::initialize()
 
 	addMesh();
 
-	addMesh();
 
 
 	// Visit all the nodes in the scene, drawing the models/mesh.
@@ -255,12 +267,15 @@ void MayaViewer::update(float elapsedTime)
 
 	_scene->findNode("Plane")->rotateX(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
 
+
 	getMayaData();
 
-	if (comlib.test() && onceBool)
+	if (test2)
 	{
-		_wireframe = !_wireframe;
-		onceBool = false;
+		_scene->findNode("newMesh")->translateLeft(-0.01);
+		_scene->findNode("newMesh")->rotateX(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
+		_scene->findNode("newMesh")->rotateY(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
+		//test2 = false;
 	}
 
 }
@@ -310,6 +325,7 @@ void MayaViewer::getMayaData()
 	{
 	case 1:
 		createMesh(data);
+		test2 = true;
 		break;
 	}
 
