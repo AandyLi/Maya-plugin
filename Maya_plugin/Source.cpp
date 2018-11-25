@@ -148,22 +148,37 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 	{
 		MGlobal::displayInfo(MString("Status  ==  Succsess ") + getNodeName(plug.node()));
 
-		MeshInfo mesh;
+
+		// Local data for mesh
+		MeshInfo   mesh;
 		vectorData vD;
 
-		MFloatPointArray pts;
-		fn.getPoints(pts);
+		// Maya classes
+		MFloatPointArray  meshVertexPoints;
+		MFloatVectorArray normalVector;
+		MFloatArray       uvArrX;
+		MFloatArray       uvArrY;
+		MIntArray         triangleCounts;
+		MIntArray         triangleVertices; // Total amount of vertices
 
-		MString points;
+		// Custom temporary structs for mesh
+		UV     uv;
+		Normal normal;
+		Vertex v;
+		int    indice;
 
-		MFloatArray uvArrX;
-		MFloatArray uvArrY;
+		// Maya functions to access data
+		fn.getPoints   (meshVertexPoints);
+		fn.getUVs      (uvArrX, uvArrY);
+		fn.getNormals  (normalVector);
+		fn.getTriangles(triangleCounts, triangleVertices);
 
-		fn.getUVs(uvArrX, uvArrY);
+		// Add mesh data to MeshInfo struct
+		mesh.nrOfVertices    = meshVertexPoints.length();
+		mesh.nrOfTriVertices = triangleVertices.length();
+		mesh.msgType         = 1;
 
-
-		UV uv;
-
+		// Push UVs into vector
 		for (int i = 0; i < fn.numUVs(); i++)
 		{
 			uv.x = uvArrX[i];
@@ -172,54 +187,50 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 			vD.uv.push_back(uv);
 		}
 
-
-
-		// Debug
-		for (unsigned int i = 0; i < pts.length(); i++)
+		// Push normals into vector 
+		for (int i = 0; i < normalVector.length(); i++)
 		{
-			points += "Vertex ";
-			points += i;
-			points += "::: x: ";
-			points += pts[i].x;
-			points += ", y: ";
-			points += pts[i].y;
-			points += ", z: ";
-			points += pts[i].z;
-			points += "\n";
+			normal.x = normalVector[i].x;
+			normal.y = normalVector[i].y;
+			normal.z = normalVector[i].z;
+
+			vD.normal.push_back(normal);
 		}
 
-		MGlobal::displayInfo(points);
-
-		Vertex v;
-		// Get all vertices and store them in meshinfo
-		for (unsigned int i = 0; i < pts.length(); i++)
+		// Push vertices into vector
+		for (unsigned int i = 0; i < meshVertexPoints.length(); i++)
 		{
-			v.x = pts[i].x;
-			v.y = pts[i].y;
-			v.z = pts[i].z;
+			v.x = meshVertexPoints[i].x;
+			v.y = meshVertexPoints[i].y;
+			v.z = meshVertexPoints[i].z;
 
 			vD.v.push_back(v);
 		}
 
-		mesh.nrOfVertices = pts.length();
-
-
-
-		MIntArray triangleCounts;
-		MIntArray triangleVertices;
-
-		fn.getTriangles(triangleCounts, triangleVertices);
-
-		mesh.nrOfTriVertices = triangleVertices.length();
-
-
 		// Store indices in int array
-		int temp;
 		for (int i = 0; i < mesh.nrOfTriVertices; i++)
 		{
-			temp = triangleVertices[i];
-			vD.indices.push_back(temp);
+			indice = triangleVertices[i];
+			vD.indices.push_back(indice);
 		}
+
+#pragma region Debug
+		// Debug
+		MString points;
+		for (unsigned int i = 0; i < meshVertexPoints.length(); i++)
+		{
+			points += "Vertex ";
+			points += i;
+			points += "::: x: ";
+			points += meshVertexPoints[i].x;
+			points += ", y: ";
+			points += meshVertexPoints[i].y;
+			points += ", z: ";
+			points += meshVertexPoints[i].z;
+			points += "\n";
+		}
+
+		MGlobal::displayInfo(points);
 
 		// triangleCounts
 		MString msg(getNodeName(plug.node()) + ": Triangle counts array length  " + triangleCounts.length());
@@ -263,6 +274,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		}
 		MGlobal::displayInfo(msg);
 
+#pragma endregion
 
 		// remove callback(s)
 		MNodeMessage::removeCallback(meshNodeCallbackID);
@@ -270,11 +282,8 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		//myCallbackArray.remove(meshNodeCallbackID);
 		MGlobal::displayInfo(MString("Callback removed"));
 
-		mesh.msgType = 1;
-
 
 		prepareMeshMessage(mesh, vD, 1);
-
 		
 	}
 }
