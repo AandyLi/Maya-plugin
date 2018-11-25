@@ -91,7 +91,7 @@
     <TargetExt>.mll</TargetExt>
     <IncludePath>C:\Program Files\Autodesk\Maya2017\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files\Autodesk\Maya2017\lib;$(LibraryPath)</LibraryPath>
-    <TargetName>Maya_plugin</TargetName>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>

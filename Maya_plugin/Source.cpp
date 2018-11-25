@@ -175,7 +175,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 
 		// Debug
-		for (int i = 0; i < pts.length(); i++)
+		for (unsigned int i = 0; i < pts.length(); i++)
 		{
 			points += "Vertex ";
 			points += i;
@@ -192,7 +192,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		Vertex v;
 		// Get all vertices and store them in meshinfo
-		for (int i = 0; i < pts.length(); i++)
+		for (unsigned int i = 0; i < pts.length(); i++)
 		{
 			v.x = pts[i].x;
 			v.y = pts[i].y;
@@ -226,7 +226,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		MGlobal::displayInfo(msg);
 
 		msg = (getNodeName(plug.node()) + ": Triangle counts array ");
-		for (int i = 0; i < triangleCounts.length(); i++)
+		for (unsigned int i = 0; i < triangleCounts.length(); i++)
 		{
 			msg += triangleCounts[i];
 			msg += ", ";
@@ -238,7 +238,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		MGlobal::displayInfo(msg);
 
 		msg = (getNodeName(plug.node()) + ": Triangle vertices array ");
-		for (int i = 0; i < triangleVertices.length(); i++)
+		for (unsigned int i = 0; i < triangleVertices.length(); i++)
 		{
 			msg += triangleVertices[i];
 			msg += ", ";
@@ -446,7 +446,7 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 	}
 
 
-	if (msg == MNodeMessage::AttributeMessage::kAttributeSet | MNodeMessage::AttributeMessage::kIncomingDirection && index >= 0)
+	if (msg == (MNodeMessage::AttributeMessage::kAttributeSet | MNodeMessage::AttributeMessage::kIncomingDirection) && index >= 0)
 	{
 		MString msg2("Vertex was moved");
 		MGlobal::displayInfo(msg2);
