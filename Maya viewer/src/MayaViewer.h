@@ -35,6 +35,15 @@ private:
 
 	bool MayaViewer::initializeMaterials(Node* node);
 	comLib comlib;
+
+	struct meshList {
+		int id;
+		string meshName;
+	};
+
+	int nrOfAddedMeshes = 0;
+
+	vector<meshList> mVectorList;
 public:
 
     /**

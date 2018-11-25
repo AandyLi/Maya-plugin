@@ -9,6 +9,17 @@ struct Vertex {
 	float z;
 };
 
+struct UV {
+	float x;
+	float y;
+};
+
+struct Normal {
+	float x;
+	float y;
+	float z;
+};
+
 
 struct MeshInfo {
 
@@ -26,4 +37,6 @@ struct Header {
 struct vectorData {
 	vector<Vertex> v;
 	vector<int> indices;
+	vector<UV> uv;
+	vector<Normal> normal;
 };

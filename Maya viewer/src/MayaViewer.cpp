@@ -72,11 +72,10 @@ bool MayaViewer::addMesh()
 	SAFE_RELEASE(light);
 	lightNode->translateUp(2.0f);
 	// Bind the light's color and direction to the material.
-	//mat->getParameter("u_directionalLightColor[0]")->setValue(lightNode->getLight()->getColor());
-	//mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
+	mat->getParameter("u_directionalLightColor[0]")->setValue(lightNode->getLight()->getColor());
+	mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
 
 	_scene->addNode("Plane")->setDrawable(model);
-
 
 	SAFE_RELEASE(model);
 
@@ -198,8 +197,21 @@ void MayaViewer::createMesh(char* data)
 	//mat->getParameter("u_directionalLightColor[0]")->setValue(lightNode->getLight()->getColor());
 	//mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
 
-	_scene->addNode("newMesh")->setDrawable(model);
+	
 
+
+	meshList mlist;
+	mlist.id = nrOfAddedMeshes;
+	mlist.meshName = "mesh ";
+	mlist.meshName += to_string(mlist.id);
+
+	string name = mlist.meshName;
+
+	_scene->addNode(name.c_str())->setDrawable(model);
+
+	mVectorList.push_back(mlist);
+
+	nrOfAddedMeshes++;
 
 	SAFE_RELEASE(model);
 
@@ -272,9 +284,13 @@ void MayaViewer::update(float elapsedTime)
 
 	if (test2)
 	{
-		_scene->findNode("newMesh")->translateLeft(-0.01);
-		_scene->findNode("newMesh")->rotateX(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
-		_scene->findNode("newMesh")->rotateY(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
+
+		for (int i = 0; i < mVectorList.size(); i++)
+		{
+			_scene->findNode(mVectorList[i].meshName.c_str())->translateLeft(-0.01);
+			_scene->findNode(mVectorList[i].meshName.c_str())->rotateX(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
+			_scene->findNode(mVectorList[i].meshName.c_str())->rotateY(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
+		}
 		//test2 = false;
 	}
 

@@ -156,6 +156,23 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		MString points;
 
+		MFloatArray uvArrX;
+		MFloatArray uvArrY;
+
+		fn.getUVs(uvArrX, uvArrY);
+
+
+		UV uv;
+
+		for (int i = 0; i < fn.numUVs(); i++)
+		{
+			uv.x = uvArrX[i];
+			uv.y = uvArrY[i];
+
+			vD.uv.push_back(uv);
+		}
+
+
 
 		// Debug
 		for (int i = 0; i < pts.length(); i++)
@@ -193,13 +210,6 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		fn.getTriangles(triangleCounts, triangleVertices);
 
-
-		int* triCountsArr = new int[triangleCounts.length()];
-		triangleCounts.get(triCountsArr);
-
-		int* triVertsArr = new int[triangleVertices.length()]; // important! (probably not needed, remove later)
-		triangleVertices.get(triVertsArr);
-
 		mesh.nrOfTriVertices = triangleVertices.length();
 
 
@@ -236,8 +246,23 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		MGlobal::displayInfo(msg);
 
-		delete[] triVertsArr;
-		delete[] triCountsArr;
+		msg = (getNodeName(plug.node()) + ": UV array X:  " + fn.numUVs() + " total ");
+		for (int i = 0; i < fn.numUVs(); i++)
+		{
+			msg += uvArrX[i];
+			msg += ", ";
+		}
+
+		MGlobal::displayInfo(msg);
+
+		msg = (getNodeName(plug.node()) + ": UV array Y:  " + fn.numUVs() + " total ");
+		for (int i = 0; i < fn.numUVs(); i++)
+		{
+			msg += uvArrY[i];
+			msg += ", ";
+		}
+		MGlobal::displayInfo(msg);
+
 
 		// remove callback(s)
 		MNodeMessage::removeCallback(meshNodeCallbackID);
