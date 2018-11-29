@@ -150,8 +150,6 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 	{
 		MGlobal::displayInfo(MString("Status  ==  Succsess ") + getNodeName(plug.node()));
 
-		vector<int> normalIndiceArr;
-
 
 		// Local data for mesh
 		MeshInfo   mesh;
@@ -217,24 +215,10 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 			vD.v.push_back(v);
 		}
 
-		// Store indices in int array
-		/*for (int i = 0; i < mesh.nrOfTriVertices; i++)
-		{
-			indice = triangleVertices[i];
-			vD.indices.push_back(indice);
-		}*/
-
 		MStatus ItTestStatus;
 
 		MItMeshPolygon meshIteratorObj(plug.node(), &ItTestStatus);
-		/*int asd;
-		for (int i = 0; i < mesh.nrOfTriVertices; i++)
-		{
-			MStatus ret;
-			asd = meshIteratorObj.normalIndex(i, &ret);
-
-			normalIndiceArr.push_back(asd);
-		}*/
+		
 
 		// iterate through every face (polygon) of the mesh
 		for (; !meshIteratorObj.isDone(); meshIteratorObj.next())
@@ -244,93 +228,24 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 			// getPoints(MPointArray & 	pointArray) - Retrieves the positions of the vertices on the current face/polygon that the iterator is pointing to.
 			// getTriangles(MPointArray & points, MIntArray & vertexList) - Get the vertices and vertex positions of all the triangles in the current face's triangulation.
 			// 0 - 7 vertexIndex(int index) - Returns the object-relative index of the specified vertex of the current polygon. !! <---
+					
 			
-			// fill normal array with 36 values to match indices array
-
-			// local vertex index = 0
-			// object-relative normal index = normalVector[normalIndex(int localVertexIndex)]
-			// normalIndiceArr[vertexIndex(localVertexIndex)] = 
-
-			/*
-			getTriangles()
-
-			indice arr = 0, 1, 2, 3, 4, 5 // local index per vtx iteration 6x6 = 36
-
-			realArrayIndex = vertexIndex(localIndex) // gets obj-relative index (same seq as indices array of 36)
-			
-
-			int localIndexPoint = 0;
-			for(i = 0, 6, i++){
-				if(points[i] == point(localIndexPoint){
-					// set normal vector
-					normal.x = normalVector[normalIndex(localIndexPoint)].x
-					normal.y = normalVector[normalIndex(localIndexPoint)].y
-					normal.z = normalVector[normalIndex(localIndexPoint)].z
-
-
-					vD.normal.push_back(normal);
-				}
-				else{
-					localIndexPoint++;
-				}
-			}
-
-			obj rel vtx to get face relative
-
-
-			for(int i = 0, i < 4, i++){
-				if(indices[vertexIndex(i)] ){
-					// Stuff
-					newNormalVector[] = normalIndex(i);
-
-				}
-			}
-
-			1 
-			2
-			3
-			4
-
-
-
-			// first tri
-			n0 = normalVector[normalIndex(1)]
-			n1 = normalVector[normalIndex(2)]
-			n2 = normalVector[normalIndex(0)]
-
-
-			// second tri
-			n3 = normalVector[normalIndex(0)]
-			n4 = normalVector[normalIndex(2)]
-			n5 = normalVector[normalIndex(3)]			
-			*/
-			
-			MPointArray points;
-			MIntArray vertexList;
-			MIntArray vertexList2;
-
 			MPointArray localPoints;
+			MPointArray tempPoints;
+			MIntArray vertexList;
+
 
 			meshIteratorObj.getPoints(localPoints);
 
-			meshIteratorObj.getTriangles(points, vertexList2);
+			meshIteratorObj.getTriangles(tempPoints, vertexList);
 
-			meshIteratorObj.getVertices(vertexList); // 0 - 7
 
 			MString str;
+			str = "";
+
 			for (int i = 0; i < vertexList.length(); i++)
 			{
 				str += vertexList[i];
-				str += ", ";
-			}
-
-			MGlobal::displayInfo(str);
-
-			str = "";
-
-			for (int i = 0; i < vertexList2.length(); i++)
-			{
-				str += vertexList2[i];
 				str += ", ";
 			}
 
@@ -338,19 +253,18 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 			MGlobal::displayInfo(str);
 
 
-			int triNum;
-			meshIteratorObj.numTriangles(triNum);
-
-			for (int i = 0; i < vertexList2.length(); i++)
+			// Store vertex indices in int array
+			for (int i = 0; i < vertexList.length(); i++)
 			{
-				indice = vertexList2[i];
-				vD.indices.push_back(indice);
+				indice = vertexList[i];
+				vD.vertexIndices.push_back(indice);
 			}
 
-			for (int i = 0; i < vertexList2.length(); i++)
+			// Store normal indices in int array
+			for (int i = 0; i < vertexList.length(); i++)
 			{
 				
-				int localIndex = calculateLocalIndex(localPoints, meshVertexPoints, vertexList2[i]);
+				int localIndex = calculateLocalIndex(localPoints, meshVertexPoints, vertexList[i]);
 
 				str = "LocalIndex is now: ";
 				str += localIndex;
@@ -360,11 +274,9 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 				str += meshIteratorObj.normalIndex(localIndex);
 				MGlobal::displayInfo(str);
 
-				int ind = meshIteratorObj.normalIndex(localIndex);
-				normalIndiceArr.push_back(ind);
+				int normalIndice = meshIteratorObj.normalIndex(localIndex);
+				vD.normalIndices.push_back(normalIndice);
 			}
-
-
 
 
 		}
@@ -450,7 +362,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		msg = (getNodeName(plug.node()) + ": Normal indice array: ");
 		for (int i = 0; i < mesh.nrOfTriVertices; i++)
 		{
-			msg += normalIndiceArr[i];
+			msg += vD.normalIndices[i];
 			msg += ", ";
 		}
 		MGlobal::displayInfo(msg);
@@ -535,8 +447,8 @@ void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType) {
 	memcpy(data + localHead, vD.v.data(), vtxSize);
 	localHead   += vtxSize;
 
-	// Indices
-	memcpy(data + localHead, vD.indices.data(), indiceSize);
+	// Vertex Indices
+	memcpy(data + localHead, vD.vertexIndices.data(), indiceSize);
 	localHead   += indiceSize;
 
 	comLib->send(data, headerSize + h.length);

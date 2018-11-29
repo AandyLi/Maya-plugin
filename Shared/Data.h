@@ -36,7 +36,8 @@ struct Header {
 
 struct vectorData {
 	vector<Vertex> v;
-	vector<int> indices;
+	vector<int> vertexIndices;
+	vector<int> normalIndices;
 	vector<UV> uv;
 	vector<Normal> normal;
 };
