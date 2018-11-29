@@ -38,6 +38,7 @@ struct vectorData {
 	vector<Vertex> v;
 	vector<int> vertexIndices;
 	vector<int> normalIndices;
+	vector<int> uvIndices;
 	vector<UV> uv;
 	vector<Normal> normal;
 };

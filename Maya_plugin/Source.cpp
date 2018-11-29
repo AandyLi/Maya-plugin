@@ -150,10 +150,10 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 	{
 		MGlobal::displayInfo(MString("Status  ==  Succsess ") + getNodeName(plug.node()));
 
-
 		// Local data for mesh
 		MeshInfo   mesh;
 		vectorData vD;
+
 
 		// Maya classes
 		MFloatPointArray  meshVertexPoints;
@@ -161,24 +161,30 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		MFloatArray       uvArrX;
 		MFloatArray       uvArrY;
 		MIntArray         triangleCounts;
-		MIntArray         triangleVertices; // Total amount of vertices
-		
-		MIntArray normalCounts;
-		MIntArray normals;
+		MIntArray         triangleVertices;		// Holds total amount of vertices (indices array), not used in viewer!
+		MIntArray         normalCounts;			// Debug
+		MIntArray         normals;				// Debug
+		// Iterator variables
+		MPointArray       localPoints;
+		MPointArray       tempPoints;
+		MIntArray         vertexList;
+
 
 		// Custom temporary structs for mesh
 		UV     uv;
 		Normal normal;
 		Vertex v;
-		int    indice;
+		int    vertexIndice;
+		int    normalIndice;
+		int    uvIndex;
+
 
 		// Maya functions to access data
 		fn.getPoints   (meshVertexPoints);
 		fn.getUVs      (uvArrX, uvArrY);
 		fn.getNormals  (normalVector);
 		fn.getTriangles(triangleCounts, triangleVertices);
-		
-		fn.getNormalIds(normalCounts, normals);
+		fn.getNormalIds(normalCounts, normals); // Debug
 
 
 		// Add mesh data to MeshInfo struct
@@ -219,7 +225,6 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 
 		MItMeshPolygon meshIteratorObj(plug.node(), &ItTestStatus);
 		
-
 		// iterate through every face (polygon) of the mesh
 		for (; !meshIteratorObj.isDone(); meshIteratorObj.next())
 		{
@@ -228,18 +233,12 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 			// getPoints(MPointArray & 	pointArray) - Retrieves the positions of the vertices on the current face/polygon that the iterator is pointing to.
 			// getTriangles(MPointArray & points, MIntArray & vertexList) - Get the vertices and vertex positions of all the triangles in the current face's triangulation.
 			// 0 - 7 vertexIndex(int index) - Returns the object-relative index of the specified vertex of the current polygon. !! <---
-					
-			
-			MPointArray localPoints;
-			MPointArray tempPoints;
-			MIntArray vertexList;
 
 
 			meshIteratorObj.getPoints(localPoints);
-
 			meshIteratorObj.getTriangles(tempPoints, vertexList);
 
-
+#pragma region Debug
 			MString str;
 			str = "";
 
@@ -252,20 +251,19 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 			str += "\n------ \n";
 			MGlobal::displayInfo(str);
 
-
-			// Store vertex indices in int array
+#pragma endregion
+			// Push vertex indices into vector
 			for (int i = 0; i < vertexList.length(); i++)
 			{
-				indice = vertexList[i];
-				vD.vertexIndices.push_back(indice);
+				vertexIndice = vertexList[i];
+				vD.vertexIndices.push_back(vertexIndice);
 			}
 
-			// Store normal indices in int array
+			// Push normal and uv indices into vector
 			for (int i = 0; i < vertexList.length(); i++)
 			{
-				
 				int localIndex = calculateLocalIndex(localPoints, meshVertexPoints, vertexList[i]);
-
+#pragma region Debug
 				str = "LocalIndex is now: ";
 				str += localIndex;
 				MGlobal::displayInfo(str);
@@ -273,9 +271,16 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 				str = "NormalVectorIndex is now: ";
 				str += meshIteratorObj.normalIndex(localIndex);
 				MGlobal::displayInfo(str);
-
-				int normalIndice = meshIteratorObj.normalIndex(localIndex);
+#pragma endregion
+				// Normals
+				normalIndice = meshIteratorObj.normalIndex(localIndex);
 				vD.normalIndices.push_back(normalIndice);
+
+				// UVs
+				uvIndex;
+				meshIteratorObj.getUVIndex(localIndex, uvIndex);
+
+				vD.uvIndices.push_back(uvIndex);
 			}
 
 
@@ -425,11 +430,11 @@ void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType) {
 	size_t headerSize = sizeof(h);
 	size_t meshSize   = sizeof(mesh);
 	size_t vtxSize    = sizeof(Vertex) * mesh.nrOfVertices; // test
-	size_t indiceSize = sizeof(int) * mesh.nrOfTriVertices;
+	size_t vtxIndiceSize = sizeof(int) * mesh.nrOfTriVertices;
 	size_t localHead  = 0;
 
 	h.msgType = msgType;
-	h.length = meshSize + vtxSize + indiceSize;
+	h.length = meshSize + vtxSize + vtxIndiceSize;
 
 
 
@@ -448,8 +453,8 @@ void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType) {
 	localHead   += vtxSize;
 
 	// Vertex Indices
-	memcpy(data + localHead, vD.vertexIndices.data(), indiceSize);
-	localHead   += indiceSize;
+	memcpy(data + localHead, vD.vertexIndices.data(), vtxIndiceSize);
+	localHead   += vtxIndiceSize;
 
 	comLib->send(data, headerSize + h.length);
 
