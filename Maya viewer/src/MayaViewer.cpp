@@ -101,9 +101,10 @@ void MayaViewer::createMesh(char* data)
 
 
 	int vtxCount        = newMesh.nrOfVertices;
+	int normalCount = newMesh.nrOfNormals;
 	int indiceCount     = newMesh.nrOfTriVertices;
 
-	float* vertices = new float[indiceCount * 2 * 3];
+	float* vertices = new float[indiceCount * 8];
 
 
 	// get vertices
@@ -121,35 +122,97 @@ void MayaViewer::createMesh(char* data)
 	localHead += vtxStructSize * vtxCount;
 
 	// get indices
-	vector<int> indicesVector;
+	vector<int> vtxIndicesVector;
 	size_t sizeOfInt = sizeof(int);
 
-	int indice;
+	int vtxIndice;
 	for (int i = 0; i < indiceCount; i++)
 	{
-		memcpy(&indice, data + localHead + (sizeOfInt * i), sizeOfInt);
-		indicesVector.push_back(indice);
+		memcpy(&vtxIndice, data + localHead + (sizeOfInt * i), sizeOfInt);
+		vtxIndicesVector.push_back(vtxIndice);
 	}
 
 	localHead += indiceCount * sizeOfInt;
 
+	// get normals
+	vector<Normal> normalVector;
+	size_t sizeOfNormal = sizeof(Normal);
+
+	Normal normal;
+	for (int i = 0; i < normalCount; i++)
+	{
+		memcpy(&normal, data + localHead + (sizeOfNormal * i), sizeOfNormal);
+		normalVector.push_back(normal);
+	}
+
+	localHead += normalCount * sizeOfNormal;
+
+
+	// get normal indices
+	vector<int> normalIndicesVector;
+	int normIndice;
+	for (int i = 0; i < indiceCount; i++)
+	{
+		memcpy(&normIndice, data + localHead + (sizeOfInt * i), sizeOfInt);
+		normalIndicesVector.push_back(normIndice);
+	}
+
+	localHead += indiceCount * sizeOfInt;
+
+	// get uvs
+	vector<UV> uvVector;
+	size_t sizeOfUv = sizeof(UV);
+
+	UV uv;
+
+	for (int i = 0; i < indiceCount; i++)
+	{
+		memcpy(&uv, data + localHead + (sizeOfUv * i), sizeOfUv);
+		uvVector.push_back(uv);
+	}
+
+	localHead += indiceCount * sizeOfUv;
+
+
+	// get uv indices
+	vector<int> uvIndicesVector;
+
+	int uvIndice;
+	for (int i = 0; i < indiceCount; i++)
+	{
+		memcpy(&uvIndice, data + localHead + (sizeOfInt * i), sizeOfInt);
+		uvIndicesVector.push_back(uvIndice);
+	}
+
+
+
+
 	int j = 0;
 	for (int i = 0; i < indiceCount; i++)
 	{
-		vertices[j] = vtxVector[indicesVector[i]].x;
+		// vertices
+		vertices[j] = vtxVector[vtxIndicesVector[i]].x;
 		j++;		
-		vertices[j] = vtxVector[indicesVector[i]].y;
+		vertices[j] = vtxVector[vtxIndicesVector[i]].y;
 		j++;		
-		vertices[j] = vtxVector[indicesVector[i]].z;
+		vertices[j] = vtxVector[vtxIndicesVector[i]].z;
+		j++;
 
-		// debug only for temp colors
+		// normals
+		vertices[j] = normalVector[normalIndicesVector[i]].x;
 		j++;
-		vertices[j] = 1.0f;
+		vertices[j] = normalVector[normalIndicesVector[i]].y;
 		j++;
-		vertices[j] = 0.0f;
+		vertices[j] = normalVector[normalIndicesVector[i]].z;
 		j++;
-		vertices[j] = 0.0f;
+
+
+		// uv
+		vertices[j] = uvVector[uvIndicesVector[i]].x;
 		j++;
+		vertices[j] = uvVector[uvIndicesVector[i]].y;
+		j++;
+		
 
 	}
 
@@ -157,10 +220,11 @@ void MayaViewer::createMesh(char* data)
 	VertexFormat::Element elements[] =
 	{
 		VertexFormat::Element(VertexFormat::POSITION, 3),
-		VertexFormat::Element(VertexFormat::NORMAL, 3)
+		VertexFormat::Element(VertexFormat::NORMAL, 3),
+		VertexFormat::Element(VertexFormat::TEXCOORD0, 2)
 	};
 
-	Mesh* mesh = Mesh::createMesh(VertexFormat(elements, 2), indiceCount, false);
+	Mesh* mesh = Mesh::createMesh(VertexFormat(elements, 3), indiceCount, false);
 
 	if (mesh == NULL)
 	{
@@ -172,7 +236,7 @@ void MayaViewer::createMesh(char* data)
 	mesh->setVertexData(vertices, 0, indiceCount);
 
 	Model* model = Model::create(mesh);
-	Material* mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "VERTEX_COLOR");
+	Material* mat = model->setMaterial("res/shaders/textured.vert", "res/shaders/textured.frag", "POINT_LIGHT_COUNT 1");
 
 	SAFE_RELEASE(mesh);
 
@@ -194,9 +258,18 @@ void MayaViewer::createMesh(char* data)
 	SAFE_RELEASE(light);
 	lightNode->translateUp(2.0f);
 	// Bind the light's color and direction to the material.
-	//mat->getParameter("u_directionalLightColor[0]")->setValue(lightNode->getLight()->getColor());
+	mat->getParameter("u_pointLightColor[0]")->setValue(lightNode->getLight()->getColor());
 	//mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
+	mat->getParameter("u_pointLightPosition[0]")->bindValue(lightNode, &Node::getTranslationView);
+	mat->getParameter("u_pointLightRangeInverse[0]")->setValue(lightNode->getLight()->getRangeInverse());
+	mat->getParameter("u_diffuseColor")->setValue(Vector4(0.4f, 0.4f, 0.4f, 1.0f));
 
+	//// Load the texture from file.
+	Texture::Sampler* sampler = mat->getParameter("u_diffuseTexture")->setValue("res/png/crate.png", true);
+	sampler->setFilterMode(Texture::LINEAR_MIPMAP_LINEAR, Texture::LINEAR);
+	mat->getStateBlock()->setCullFace(true);
+	mat->getStateBlock()->setDepthTest(true);
+	mat->getStateBlock()->setDepthWrite(true);
 	
 
 
