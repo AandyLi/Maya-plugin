@@ -190,6 +190,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		// Add mesh data to MeshInfo struct
 		mesh.nrOfVertices    = meshVertexPoints.length();
 		mesh.nrOfTriVertices = triangleVertices.length();
+		mesh.nrOfNormals     = normalVector.length();
 		mesh.msgType         = 1;
 
 		// Push UVs into vector
@@ -426,15 +427,19 @@ void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType) {
 
 	Header h;
 
-
-	size_t headerSize = sizeof(h);
-	size_t meshSize   = sizeof(mesh);
-	size_t vtxSize    = sizeof(Vertex) * mesh.nrOfVertices; // test
-	size_t vtxIndiceSize = sizeof(int) * mesh.nrOfTriVertices;
-	size_t localHead  = 0;
+	int totalVertices       = mesh.nrOfTriVertices;
+	size_t headerSize       = sizeof(h);
+	size_t meshSize         = sizeof(mesh);
+	size_t vtxSize          = sizeof(Vertex) * mesh.nrOfVertices; // test
+	size_t vtxIndiceSize    = sizeof(int) * totalVertices;
+	size_t normalSize       = sizeof(Normal) * mesh.nrOfNormals;
+	size_t normalIndiceSize = sizeof(int) * totalVertices;
+	size_t uvSize           = sizeof(UV) * totalVertices;
+	size_t uvIndiceSize     = sizeof(int) * totalVertices;
+	size_t localHead        = 0;
 
 	h.msgType = msgType;
-	h.length = meshSize + vtxSize + vtxIndiceSize;
+	h.length = meshSize + vtxSize + vtxIndiceSize + normalSize + normalIndiceSize + uvSize + uvIndiceSize;
 
 
 
@@ -455,6 +460,24 @@ void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType) {
 	// Vertex Indices
 	memcpy(data + localHead, vD.vertexIndices.data(), vtxIndiceSize);
 	localHead   += vtxIndiceSize;
+
+	// Normals
+	memcpy(data + localHead, vD.normal.data(), normalSize);
+	localHead += normalSize;
+
+	// Normal indices
+	memcpy(data + localHead, vD.normalIndices.data(), normalIndiceSize);
+	localHead += normalIndiceSize;
+
+	// UVs
+	memcpy(data + localHead, vD.uv.data(), uvSize);
+	localHead += uvSize;
+
+	// UV indices
+	memcpy(data + localHead, vD.uvIndices.data(), uvIndiceSize);
+	localHead += uvIndiceSize;
+
+
 
 	comLib->send(data, headerSize + h.length);
 

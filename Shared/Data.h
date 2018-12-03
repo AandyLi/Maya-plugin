@@ -25,7 +25,7 @@ struct MeshInfo {
 
 	int nrOfVertices;
 	int nrOfTriVertices;
-
+	int nrOfNormals;
 	int msgType;
 };
 
