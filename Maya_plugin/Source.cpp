@@ -493,78 +493,101 @@ void nodeRenamed(MObject &node, const MString &str, void *clientData) {
 
 void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void *clientData) {
 
-	MGlobal::displayInfo(MString("Node changed function:"));
+	//MGlobal::displayInfo(MString("Node changed function:"));
 
 	MStatus status;
 	MFnMesh fn(plug.node(), &status);
-	// MFnMesh fn = plug.node(&status); Not working!
 
-	/*
-	if (status == MS::kSuccess)
+	// try to get translation, scale and rot data here
+
+
+
+	if (plug.partialName(0, 0, 0, 0, 0, 1) == "translateX" || plug.partialName(0, 0, 0, 0, 0, 1) == "translateY" || plug.partialName(0, 0, 0, 0, 0, 1) == "translateZ")
 	{
-		MGlobal::displayInfo(MString("Status  ==  Succsess ") + plug.node().apiTypeStr() + msg);
+		MFnTransform transFn(plug.node(), &status);
 
-		MFloatPointArray pts;
-		fn.getPoints(pts);
+		MStatus test;
+		MTransformationMatrix tMtx = transFn.transformation(&test);
 
-		MString points;
 
-		for (int i = 0; i < pts.length(); i++)
+		MString msg;
+		if (test == MS::kSuccess)
 		{
-			points += "Vertex ";
-			points += i;
-			points += "::: x: ";
-			points += pts[i].x;
-			points += ", y: ";
-			points += pts[i].y;
-			points += ", z: ";
-			points += pts[i].z;
-			points += "\n";
-		}
-
-		MGlobal::displayInfo(points);
-
-		MIntArray triangleCounts;
-		MIntArray triangleVertices;
-
-		fn.getTriangles(triangleCounts, triangleVertices);
-
-		int* triCountsArr = new int[triangleCounts.length()];
-		triangleCounts.get(triCountsArr);
-
-		int* triVertsArr = new int[triangleVertices.length()];
-		triangleVertices.get(triVertsArr);
-
-
-		// triangleCounts
-		MString msg(getNodeName(plug.node()) + ": Triangle counts array length  " + triangleCounts.length());
-		MGlobal::displayInfo(msg);
-
-		msg = (getNodeName(plug.node()) + ": Triangle counts array ");
-		for (int i = 0; i < triangleCounts.length(); i++)
-		{
-			msg += triCountsArr[i];
+			//MGlobal::displayInfo(MString("TRANSFORM MATRIX -----"));
+			
+			msg = "Translation data: ";
+			msg += tMtx.getTranslation(MSpace::kWorld).x;
 			msg += ", ";
-		}
-		MGlobal::displayInfo(msg);
-
-		// triangleVertices
-		msg = (getNodeName(plug.node()) + ": Triangle vertices array length  " + triangleVertices.length());
-		MGlobal::displayInfo(msg);
-
-		msg = (getNodeName(plug.node()) + ": Triangle vertices array ");
-		for (int i = 0; i < triangleVertices.length(); i++)
-		{
-			msg += triangleVertices[i];
+			msg += tMtx.getTranslation(MSpace::kWorld).y;
 			msg += ", ";
+			msg += tMtx.getTranslation(MSpace::kWorld).z;
+			MGlobal::displayInfo(msg);
 		}
 
-		MGlobal::displayInfo(msg);
-
-		delete[] triVertsArr;
-		delete[] triCountsArr;
 	}
-	*/
+	if (plug.partialName(0, 0, 0, 0, 0, 1) == "rotateX" || plug.partialName(0, 0, 0, 0, 0, 1) == "rotateY" || plug.partialName(0, 0, 0, 0, 0, 1) == "rotateZ")
+	{
+		MFnTransform transFn(plug.node(), &status);
+
+
+		double rotX, rotY, rotZ, rotW;
+
+		MStatus test;
+		MTransformationMatrix tMtx = transFn.transformation(&test);
+
+
+		MString msg;
+		if (test == MS::kSuccess)
+		{
+
+
+			tMtx.getRotationQuaternion(rotX, rotY, rotZ, rotW);
+
+			msg = "Rotation data: \n";
+			msg += rotX;
+			msg += ", ";
+			msg += rotY;
+			msg += ", ";
+			msg += rotZ;
+			msg += ", ";
+			msg += rotW;
+			msg += ", ";
+
+			MGlobal::displayInfo(msg);
+		}
+
+	}
+	if (plug.partialName(0, 0, 0, 0, 0, 1) == "scaleX" || plug.partialName(0, 0, 0, 0, 0, 1) == "scaleY" || plug.partialName(0, 0, 0, 0, 0, 1) == "scaleZ")
+	{
+		MFnTransform transFn(plug.node(), &status);
+
+
+		double scale[3];
+
+		MStatus test;
+		MTransformationMatrix tMtx = transFn.transformation(&test);
+
+
+		MString msg;
+		if (test == MS::kSuccess)
+		{
+
+
+			tMtx.getScale(scale, MSpace::kWorld);
+
+			msg = "Scale data: \n";
+			msg += scale[0];
+			msg += ", ";
+			msg += scale[1];
+			msg += ", ";
+			msg += scale[2];
+			msg += ", ";
+
+			MGlobal::displayInfo(msg);
+		}
+
+	}
+
 
 
 	if (plug.partialName(0, 0, 0, 0, 0, 1) == "translateX")
