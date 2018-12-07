@@ -281,6 +281,9 @@ void MayaViewer::createMesh(char* data)
 
 	_scene->addNode(name.c_str())->setDrawable(model);
 
+	string a = name.c_str();
+
+
 	mVectorList.push_back(mlist);
 
 	nrOfAddedMeshes++;
@@ -313,13 +316,7 @@ void MayaViewer::transformMesh(char * data)
 
 	if (test2)
 	{
-
-		for (int i = 0; i < mVectorList.size(); i++)
-		{
-			_scene->findNode(mVectorList[i].meshName.c_str())->setTranslation(transVec);
-			
-		}
-		//test2 = false;
+		_scene->findNode(td.name)->setTranslation(transVec);
 	}
 
 }

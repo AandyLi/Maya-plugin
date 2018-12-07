@@ -24,6 +24,7 @@ struct TranslationData {
 	float tx;
 	float ty;
 	float tz;
+	char name[50];
 };
 
 struct RotationData {

@@ -208,8 +208,9 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		mesh.nrOfTriVertices = triangleVertices.length();
 		mesh.nrOfNormals     = normalVector.length();
 		mesh.msgType         = 1;
-		strncpy(mesh.name, getNodeName(plug.node()).asChar(), sizeof(mesh.name));
-		
+		strncpy(mesh.name, getNodeName(fn.parent(0)).asChar(), sizeof(mesh.name));
+	
+
 
 		// Push UVs into vector
 		for (int i = 0; i < fn.numUVs(); i++)
@@ -527,6 +528,8 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 		MStatus test;
 		MTransformationMatrix tMtx = transFn.transformation(&test);
 
+		MString n = transFn.name();
+
 
 		MString msg;
 		if (test == MS::kSuccess)
@@ -550,6 +553,7 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 
 			td.tz = (float)tMtx.getTranslation(MSpace::kWorld).z;
 
+			strncpy(td.name, getNodeName(plug.node()).asChar(), sizeof(td.name));
 
 			globalTranslationData = td;
 			globalTransDataUpdated = true;
