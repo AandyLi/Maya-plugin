@@ -20,9 +20,26 @@ struct Normal {
 	float z;
 };
 
+struct TranslationData {
+	float tx;
+	float ty;
+	float tz;
+};
+
+struct RotationData {
+	double rx;
+	double ry;
+	double rz;
+};
+
+struct ScaleData {
+	double sx;
+	double sy;
+	double sz;
+};
 
 struct MeshInfo {
-
+	char name[50];
 	int nrOfVertices;
 	int nrOfTriVertices;
 	int nrOfNormals;

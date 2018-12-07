@@ -275,8 +275,7 @@ void MayaViewer::createMesh(char* data)
 
 	meshList mlist;
 	mlist.id = nrOfAddedMeshes;
-	mlist.meshName = "mesh ";
-	mlist.meshName += to_string(mlist.id);
+	mlist.meshName = newMesh.name;
 
 	string name = mlist.meshName;
 
@@ -289,6 +288,40 @@ void MayaViewer::createMesh(char* data)
 	SAFE_RELEASE(model);
 
 	delete[] vertices;
+}
+
+void MayaViewer::transformMesh(char * data)
+{
+
+	size_t headerSize = sizeof(Header);
+	size_t tdSize = sizeof(TranslationData);
+	size_t localHead = headerSize;
+
+	TranslationData td;
+	memcpy(&td, data + localHead, tdSize);
+	localHead += tdSize;
+
+	Matrix m;
+
+	Vector3 transVec;
+
+	transVec.x = td.tx;
+	transVec.y = td.ty;
+	transVec.z = td.tz;
+
+	m.translate(transVec);
+
+	if (test2)
+	{
+
+		for (int i = 0; i < mVectorList.size(); i++)
+		{
+			_scene->findNode(mVectorList[i].meshName.c_str())->setTranslation(transVec);
+			
+		}
+		//test2 = false;
+	}
+
 }
 
 void MayaViewer::initialize()
@@ -355,17 +388,17 @@ void MayaViewer::update(float elapsedTime)
 
 	getMayaData();
 
-	if (test2)
-	{
+	//if (test2)
+	//{
 
-		for (int i = 0; i < mVectorList.size(); i++)
-		{
-			_scene->findNode(mVectorList[i].meshName.c_str())->translateLeft(-0.01);
-			_scene->findNode(mVectorList[i].meshName.c_str())->rotateX(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
-			_scene->findNode(mVectorList[i].meshName.c_str())->rotateY(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
-		}
-		//test2 = false;
-	}
+	//	for (int i = 0; i < mVectorList.size(); i++)
+	//	{
+	//		_scene->findNode(mVectorList[i].meshName.c_str())->translateLeft(-0.01);
+	//		_scene->findNode(mVectorList[i].meshName.c_str())->rotateX(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
+	//		_scene->findNode(mVectorList[i].meshName.c_str())->rotateY(MATH_DEG_TO_RAD((float)elapsedTime / 1000.0f * 180.0f));
+	//	}
+	//	//test2 = false;
+	//}
 
 }
 
@@ -416,6 +449,9 @@ void MayaViewer::getMayaData()
 		createMesh(data);
 		test2 = true;
 		break;
+
+	case 2:
+		transformMesh(data);
 	}
 
 

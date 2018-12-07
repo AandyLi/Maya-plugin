@@ -19,11 +19,17 @@ void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType);
 
 int calculateLocalIndex(MPointArray localPointArray, MFloatPointArray objPoints, int vertexListIndex);
 
+void prepareTranslationMessage(TranslationData td);
+
 // Declarations end *****************************************
 
 MCallbackId meshNodeCallbackID;
 
 ComLib* comLib;
+
+float time = 0;
+TranslationData globalTranslationData;
+bool globalTransDataUpdated = false;
 
 MString getNodeName(MObject &node) {
 	MString nodeName;
@@ -41,9 +47,19 @@ MString getNodeName(MObject &node) {
 	return nodeName;
 }
 void TimerCallBack(float elapsedTime, float lastTime, void *clientData) {
-	MString msg("Elapsd time: ");
+	/*MString msg("Elapsd time: ");
 	msg += elapsedTime;
-	MGlobal::displayInfo(msg);
+	MGlobal::displayInfo(msg);*/
+
+	time += elapsedTime;
+
+	if (globalTransDataUpdated)
+	{
+		MGlobal::displayInfo(MString("Sending translation data"));
+		prepareTranslationMessage(globalTranslationData);
+		globalTransDataUpdated = false;
+	}
+
 }
 
 void TransformChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void *clientData) {
@@ -192,6 +208,8 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		mesh.nrOfTriVertices = triangleVertices.length();
 		mesh.nrOfNormals     = normalVector.length();
 		mesh.msgType         = 1;
+		strncpy(mesh.name, getNodeName(plug.node()).asChar(), sizeof(mesh.name));
+		
 
 		// Push UVs into vector
 		for (int i = 0; i < fn.numUVs(); i++)
@@ -522,6 +540,20 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 			msg += ", ";
 			msg += tMtx.getTranslation(MSpace::kWorld).z;
 			MGlobal::displayInfo(msg);
+
+
+			TranslationData td;
+
+			td.tx = (float)tMtx.getTranslation(MSpace::kWorld).x;
+
+			td.ty = (float)tMtx.getTranslation(MSpace::kWorld).y;
+
+			td.tz = (float)tMtx.getTranslation(MSpace::kWorld).z;
+
+
+			globalTranslationData = td;
+			globalTransDataUpdated = true;
+
 		}
 
 	}
@@ -646,6 +678,37 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 	}
 }
 
+void prepareTranslationMessage(TranslationData td) {
+
+	Header h;
+
+	size_t headerSize = sizeof(h);
+	size_t tdSize = sizeof(td);
+
+	size_t localHead = 0;
+
+	h.msgType = 2;
+	h.length = tdSize;
+
+
+
+	char* data = new char[headerSize + h.length];
+
+
+	// Header
+	memcpy(data, &h, headerSize);
+	localHead += headerSize;
+
+	// Td
+	memcpy(data + localHead, &td, tdSize);
+
+
+	comLib->send(data, headerSize + h.length);
+
+	delete[] data;
+}
+
+
 // called when the plugin is loaded
 EXPORT MStatus initializePlugin(MObject obj)
 {
@@ -659,8 +722,10 @@ EXPORT MStatus initializePlugin(MObject obj)
 
 	MGlobal::displayInfo("Maya plugin loaded! 12345");
 
-	/*MStatus status = MS::kSuccess;
-	MCallbackId id = MTimerMessage::addTimerCallback(5, TimerCallBack, NULL, &status);*/
+	float fps = 30;
+
+	MStatus status = MS::kSuccess;
+	MCallbackId id = MTimerMessage::addTimerCallback(1 / fps, TimerCallBack, NULL, &status);
 
 	MStatus status2;
 	// Node added
@@ -697,13 +762,13 @@ EXPORT MStatus initializePlugin(MObject obj)
 		}
 	}
 
-	/*if (status == MS::kSuccess)
+	if (status == MS::kSuccess)
 	{
 		if (myCallbackArray.append(id) == MS::kSuccess)
 		{
 
 		}
-	}*/
+	}
 	// if res == kSuccess then the plugin has been loaded, 
 	// otherwise is has not.
 

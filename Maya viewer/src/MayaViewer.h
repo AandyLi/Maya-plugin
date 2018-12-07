@@ -23,6 +23,7 @@ private:
 
 	bool addMesh();
 	void createMesh(char* data);
+	void transformMesh(char* data);
 
 	Scene* _scene;
 	bool _wireframe;
