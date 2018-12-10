@@ -24,6 +24,8 @@ private:
 	bool addMesh();
 	void createMesh(char* data);
 	void transformMesh(char* data);
+	void scaleMesh(char* data);
+	void rotateMesh(char * data);
 
 	Scene* _scene;
 	bool _wireframe;

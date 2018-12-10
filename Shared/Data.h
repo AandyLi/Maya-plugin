@@ -3,6 +3,13 @@
 
 using namespace std;
 
+ enum MSG_TYPE {
+	MeshAdded,
+	Translation,
+	Scale,
+	Rotation
+};
+
 struct Vertex {
 	float x;
 	float y;
@@ -27,16 +34,19 @@ struct TranslationData {
 	char name[50];
 };
 
-struct RotationData {
-	double rx;
-	double ry;
-	double rz;
-};
-
 struct ScaleData {
 	double sx;
 	double sy;
 	double sz;
+	char name[50];
+};
+
+struct RotationData {
+	double rx;
+	double ry;
+	double rz;
+	double rw;
+	char name[50];
 };
 
 struct MeshInfo {
@@ -48,7 +58,7 @@ struct MeshInfo {
 };
 
 struct Header {
-	int msgType;
+	MSG_TYPE msgType;
 	int length;
 };
 

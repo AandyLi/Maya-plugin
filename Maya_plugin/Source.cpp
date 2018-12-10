@@ -15,11 +15,15 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 
 void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void *clientData);
 
-void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType);
+void prepareMeshMessage(MeshInfo mesh, vectorData vD, MSG_TYPE msgType);
 
 int calculateLocalIndex(MPointArray localPointArray, MFloatPointArray objPoints, int vertexListIndex);
 
 void prepareTranslationMessage(TranslationData td);
+
+void prepareScaleMessage(ScaleData sd);
+
+void prepareRotationMessage(RotationData rd);
 
 // Declarations end *****************************************
 
@@ -28,8 +32,13 @@ MCallbackId meshNodeCallbackID;
 ComLib* comLib;
 
 float time = 0;
-TranslationData globalTranslationData;
-bool globalTransDataUpdated = false;
+bool g_TransDataUpdated = false;
+bool g_ScaleDataUpdated = false;
+bool g_RotDataUpdated = false;
+
+TranslationData g_TransData;
+ScaleData g_ScaleData;
+RotationData g_RotData;
 
 MString getNodeName(MObject &node) {
 	MString nodeName;
@@ -53,12 +62,27 @@ void TimerCallBack(float elapsedTime, float lastTime, void *clientData) {
 
 	time += elapsedTime;
 
-	if (globalTransDataUpdated)
+	if (g_TransDataUpdated)
 	{
 		MGlobal::displayInfo(MString("Sending translation data"));
-		prepareTranslationMessage(globalTranslationData);
-		globalTransDataUpdated = false;
+		prepareTranslationMessage(g_TransData);
+		g_TransDataUpdated = false;
 	}
+
+	if (g_ScaleDataUpdated)
+	{
+		MGlobal::displayInfo(MString("Sending translation data"));
+		prepareScaleMessage(g_ScaleData);
+		g_ScaleDataUpdated = false;
+	}
+
+	if (g_RotDataUpdated)
+	{
+		MGlobal::displayInfo(MString("Sending translation data"));
+		prepareRotationMessage(g_RotData);
+		g_RotDataUpdated = false;
+	}
+
 
 }
 
@@ -419,7 +443,7 @@ void meshAdded(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug
 		MGlobal::displayInfo(MString("Callback removed"));
 
 
-		prepareMeshMessage(mesh, vD, 1);
+		prepareMeshMessage(mesh, vD, MSG_TYPE::MeshAdded);
 		
 	}
 }
@@ -438,7 +462,7 @@ int calculateLocalIndex(MPointArray localPointArray, MFloatPointArray objPoints,
 	return index;
 }
 
-void prepareMeshMessage(MeshInfo mesh, vectorData vD, int msgType) {
+void prepareMeshMessage(MeshInfo mesh, vectorData vD, MSG_TYPE msgType) {
 
 	// create local mesh info holding all vector stuff
 	// dont copy over struct containing vector
@@ -555,8 +579,8 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 
 			strncpy(td.name, getNodeName(plug.node()).asChar(), sizeof(td.name));
 
-			globalTranslationData = td;
-			globalTransDataUpdated = true;
+			g_TransData = td;
+			g_TransDataUpdated = true;
 
 		}
 
@@ -576,7 +600,6 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 		if (test == MS::kSuccess)
 		{
 
-
 			tMtx.getRotationQuaternion(rotX, rotY, rotZ, rotW);
 
 			msg = "Rotation data: \n";
@@ -590,6 +613,19 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 			msg += ", ";
 
 			MGlobal::displayInfo(msg);
+
+			RotationData rd;
+
+			rd.rx = rotX;
+			rd.ry = rotY;
+			rd.rz = rotZ;
+			rd.rw = rotW;
+
+			strncpy(rd.name, getNodeName(plug.node()).asChar(), sizeof(rd.name));
+
+			g_RotData = rd;
+			g_RotDataUpdated = true;
+
 		}
 
 	}
@@ -607,8 +643,6 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 		MString msg;
 		if (test == MS::kSuccess)
 		{
-
-
 			tMtx.getScale(scale, MSpace::kWorld);
 
 			msg = "Scale data: \n";
@@ -620,6 +654,20 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 			msg += ", ";
 
 			MGlobal::displayInfo(msg);
+
+
+			ScaleData sd;
+
+			sd.sx = scale[0];
+			sd.sy = scale[1];
+			sd.sz = scale[2];
+
+			strncpy(sd.name, getNodeName(plug.node()).asChar(), sizeof(sd.name));
+
+			g_ScaleData = sd;
+			g_ScaleDataUpdated = true;
+
+
 		}
 
 	}
@@ -686,14 +734,13 @@ void prepareTranslationMessage(TranslationData td) {
 
 	Header h;
 
-	size_t headerSize = sizeof(h);
+	size_t headerSize = sizeof(Header);
 	size_t tdSize = sizeof(td);
 
 	size_t localHead = 0;
 
-	h.msgType = 2;
+	h.msgType = MSG_TYPE::Translation;
 	h.length = tdSize;
-
 
 
 	char* data = new char[headerSize + h.length];
@@ -705,6 +752,62 @@ void prepareTranslationMessage(TranslationData td) {
 
 	// Td
 	memcpy(data + localHead, &td, tdSize);
+
+
+	comLib->send(data, headerSize + h.length);
+
+	delete[] data;
+}
+
+void prepareScaleMessage(ScaleData sd) {
+	Header h;
+
+	size_t headerSize = sizeof(Header);
+	size_t sdSize = sizeof(sd);
+
+	size_t localHead = 0;
+
+	h.msgType = MSG_TYPE::Scale;
+	h.length = sdSize;
+
+
+	char* data = new char[headerSize + h.length];
+
+
+	// Header
+	memcpy(data, &h, headerSize);
+	localHead += headerSize;
+
+	// Sd
+	memcpy(data + localHead, &sd, sdSize);
+
+
+	comLib->send(data, headerSize + h.length);
+
+	delete[] data;
+}
+
+void prepareRotationMessage(RotationData rd) {
+	Header h;
+
+	size_t headerSize = sizeof(Header);
+	size_t rdSize = sizeof(rd);
+
+	size_t localHead = 0;
+
+	h.msgType = MSG_TYPE::Rotation;
+	h.length = rdSize;
+
+
+	char* data = new char[headerSize + h.length];
+
+
+	// Header
+	memcpy(data, &h, headerSize);
+	localHead += headerSize;
+
+	// Rd
+	memcpy(data + localHead, &rd, rdSize);
 
 
 	comLib->send(data, headerSize + h.length);

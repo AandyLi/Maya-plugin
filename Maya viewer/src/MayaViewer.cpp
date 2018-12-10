@@ -321,6 +321,53 @@ void MayaViewer::transformMesh(char * data)
 
 }
 
+void MayaViewer::scaleMesh(char * data)
+{
+	size_t headerSize = sizeof(Header);
+	size_t sdSize = sizeof(ScaleData);
+	size_t localHead = headerSize;
+
+	ScaleData sd;
+	memcpy(&sd, data + localHead, sdSize);
+	localHead += sdSize;
+
+	Matrix m;
+
+	Vector3 scaleVec;
+
+	scaleVec.x = sd.sx;
+	scaleVec.y = sd.sy;
+	scaleVec.z = sd.sz;
+
+	//m.translate(scaleVec);
+
+	if (test2)
+	{
+		_scene->findNode(sd.name)->setScale(scaleVec);
+	}
+}
+
+void MayaViewer::rotateMesh(char * data)
+{
+
+	size_t headerSize = sizeof(Header);
+	size_t rdSize = sizeof(RotationData);
+	size_t localHead = headerSize;
+
+	RotationData rd;
+	memcpy(&rd, data + localHead, rdSize);
+	localHead += rdSize;
+
+	Matrix m;
+
+	//m.translate(scaleVec);
+
+	if (test2)
+	{
+		_scene->findNode(rd.name)->setRotation(rd.rx, rd.ry, rd.rz, rd.rw);
+	}
+}
+
 void MayaViewer::initialize()
 {
 	// Create a new empty scene.
@@ -442,13 +489,20 @@ void MayaViewer::getMayaData()
 
 	switch (h.msgType)
 	{
-	case 1:
+	case MSG_TYPE::MeshAdded:
 		createMesh(data);
 		test2 = true;
 		break;
 
-	case 2:
+	case MSG_TYPE::Translation:
 		transformMesh(data);
+		break;
+	case MSG_TYPE::Rotation:
+		rotateMesh(data);
+		break;
+	case MSG_TYPE::Scale:
+		scaleMesh(data);
+		break;
 	}
 
 
