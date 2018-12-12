@@ -26,6 +26,7 @@ private:
 	void transformMesh(char* data);
 	void scaleMesh(char* data);
 	void rotateMesh(char * data);
+	void updateCamera(char * data);
 
 	Scene* _scene;
 	bool _wireframe;

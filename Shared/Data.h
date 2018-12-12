@@ -7,8 +7,20 @@ using namespace std;
 	MeshAdded,
 	Translation,
 	Scale,
-	Rotation
+	Rotation,
+	Camera_Update
 };
+
+ struct CameraData {
+	 float posX;
+	 float posY;
+	 float posZ;
+
+	 double lookAtX;
+	 double lookAtY;
+	 double lookAtZ;
+	 double lookAtW;
+ };
 
 struct Vertex {
 	float x;

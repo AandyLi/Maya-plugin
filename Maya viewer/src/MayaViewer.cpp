@@ -368,13 +368,35 @@ void MayaViewer::rotateMesh(char * data)
 	}
 }
 
+void MayaViewer::updateCamera(char * data)
+{
+	size_t headerSize = sizeof(Header);
+	size_t cdSize = sizeof(CameraData);
+	size_t localHead = headerSize;
+
+	CameraData cd;
+	memcpy(&cd, data + localHead, cdSize);
+	localHead += cdSize;
+
+	Vector3 camTrans;
+
+	camTrans.x = cd.posX;
+	camTrans.y = cd.posY;
+	camTrans.z = cd.posZ;
+
+	_scene->findNode("camera")->setTranslation(camTrans);
+	_scene->findNode("camera")->setRotation(cd.lookAtX, cd.lookAtY, cd.lookAtZ, cd.lookAtW);
+
+
+}
+
 void MayaViewer::initialize()
 {
 	// Create a new empty scene.
 	_scene = Scene::create();
 
 	// Create the camera.
-	Camera* camera = Camera::createPerspective(45.0f, getAspectRatio(), 1.0f, 10.0f);
+	Camera* camera = Camera::createPerspective(75.0f, getAspectRatio(), 1.0f, 100.0f);
 	Node* cameraNode = _scene->addNode("camera");
 
 	// Attach the camera to a node. This determines the position of the camera.
@@ -503,6 +525,10 @@ void MayaViewer::getMayaData()
 	case MSG_TYPE::Scale:
 		scaleMesh(data);
 		break;
+	case MSG_TYPE::Camera_Update:
+		updateCamera(data);
+		break;
+
 	}
 
 

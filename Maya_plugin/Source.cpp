@@ -25,6 +25,8 @@ void prepareScaleMessage(ScaleData sd);
 
 void prepareRotationMessage(RotationData rd);
 
+void prepareCameraMessage(CameraData cam);
+
 // Declarations end *****************************************
 
 MCallbackId meshNodeCallbackID;
@@ -39,6 +41,9 @@ bool g_RotDataUpdated = false;
 TranslationData g_TransData;
 ScaleData g_ScaleData;
 RotationData g_RotData;
+
+CameraData g_CamData;
+bool g_CamDataUpdated;
 
 MString getNodeName(MObject &node) {
 	MString nodeName;
@@ -71,18 +76,109 @@ void TimerCallBack(float elapsedTime, float lastTime, void *clientData) {
 
 	if (g_ScaleDataUpdated)
 	{
-		MGlobal::displayInfo(MString("Sending translation data"));
+		MGlobal::displayInfo(MString("Sending scale data"));
 		prepareScaleMessage(g_ScaleData);
 		g_ScaleDataUpdated = false;
 	}
 
 	if (g_RotDataUpdated)
 	{
-		MGlobal::displayInfo(MString("Sending translation data"));
+		MGlobal::displayInfo(MString("Sending rotation data"));
 		prepareRotationMessage(g_RotData);
 		g_RotDataUpdated = false;
 	}
 
+
+}
+
+void cameraViewChanged(const MString &str, void *clientData) {
+
+	MGlobal::displayInfo(MString("Camera changing!!"));
+
+
+	M3dView view;
+
+	MStatus status;
+
+	status = M3dView::getM3dViewFromModelPanel(str, view);
+
+	if (status == MS::kSuccess)
+	{
+		MDagPath camPath;
+
+		view.getCamera(camPath);
+
+		MFnCamera cam(camPath);
+
+		MPoint camPos;
+
+		camPos = cam.eyePoint(MSpace::kWorld);
+
+		double rotX, rotY, rotZ, rotW;
+
+		MFnTransform camLookAt(cam.parent(0));
+
+		camLookAt.getRotationQuaternion(rotX, rotY, rotZ, rotW);
+
+
+		CameraData camera;
+
+		camera.posX = camPos.x;
+		camera.posY = camPos.y;
+		camera.posZ = camPos.z;
+
+		camera.lookAtX = rotX;
+		camera.lookAtY = rotY;
+		camera.lookAtZ = rotZ;
+		camera.lookAtW = rotW;
+
+		MString a;
+
+		a += rotX;
+		a += " ,";
+		a += rotY;
+		a += " ,";
+		a += rotZ;
+		a += " ,";
+		a += rotW;
+		a += " ,";
+
+
+		MGlobal::displayInfo(a);
+
+
+		prepareCameraMessage(camera);
+	}
+
+
+}
+
+void prepareCameraMessage(CameraData cam) {
+	Header h;
+
+	size_t headerSize = sizeof(Header);
+	size_t camSize = sizeof(cam);
+
+	size_t localHead = 0;
+
+	h.msgType = MSG_TYPE::Camera_Update;
+	h.length = camSize;
+
+
+	char* data = new char[headerSize + h.length];
+
+
+	// Header
+	memcpy(data, &h, headerSize);
+	localHead += headerSize;
+
+	// cam
+	memcpy(data + localHead, &cam, camSize);
+
+
+	comLib->send(data, headerSize + h.length);
+
+	delete[] data;
 
 }
 
@@ -849,6 +945,11 @@ EXPORT MStatus initializePlugin(MObject obj)
 	MGlobal::getActiveSelectionList(list);
 	list.getDependNode(0, objNode);
 
+	// camera changes
+
+	MStatus camChangedStatus;
+
+	MCallbackId camChangedId = MUiMessage::add3dViewPostRenderMsgCallback("modelPanel4", cameraViewChanged, NULL, &camChangedStatus);
 
 
 
@@ -876,6 +977,16 @@ EXPORT MStatus initializePlugin(MObject obj)
 
 		}
 	}
+
+	if (camChangedStatus == MS::kSuccess)
+	{
+		if (myCallbackArray.append(camChangedId) == MS::kSuccess)
+		{
+
+		}
+	}
+
+
 	// if res == kSuccess then the plugin has been loaded, 
 	// otherwise is has not.
 
