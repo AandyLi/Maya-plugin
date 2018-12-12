@@ -6,6 +6,7 @@
 #include "ComLib.h"
 #include "Data.h"
 #include <vector>
+#include <ctime>
 
 using namespace std;
 MCallbackIdArray myCallbackArray;
@@ -33,7 +34,9 @@ MCallbackId meshNodeCallbackID;
 
 ComLib* comLib;
 
-float time = 0;
+float fps = 30;
+
+clock_t elapsedTime;
 bool g_TransDataUpdated = false;
 bool g_ScaleDataUpdated = false;
 bool g_RotDataUpdated = false;
@@ -43,7 +46,7 @@ ScaleData g_ScaleData;
 RotationData g_RotData;
 
 CameraData g_CamData;
-bool g_CamDataUpdated;
+bool g_CamDataUpdated = false;
 
 MString getNodeName(MObject &node) {
 	MString nodeName;
@@ -65,7 +68,7 @@ void TimerCallBack(float elapsedTime, float lastTime, void *clientData) {
 	msg += elapsedTime;
 	MGlobal::displayInfo(msg);*/
 
-	time += elapsedTime;
+	//time += elapsedTime;
 
 	if (g_TransDataUpdated)
 	{
@@ -88,13 +91,16 @@ void TimerCallBack(float elapsedTime, float lastTime, void *clientData) {
 		g_RotDataUpdated = false;
 	}
 
-
+	if (g_CamDataUpdated)
+	{
+		prepareCameraMessage(g_CamData);
+		g_CamDataUpdated = false;
+	}
 }
 
 void cameraViewChanged(const MString &str, void *clientData) {
 
-	MGlobal::displayInfo(MString("Camera changing!!"));
-
+	//MGlobal::displayInfo(MString("Camera changing!!"));
 
 	M3dView view;
 
@@ -114,23 +120,19 @@ void cameraViewChanged(const MString &str, void *clientData) {
 
 		camPos = cam.eyePoint(MSpace::kWorld);
 
-		double rotX, rotY, rotZ, rotW;
-
 		MFnTransform camLookAt(cam.parent(0));
 
+		double rotX, rotY, rotZ, rotW;
 		camLookAt.getRotationQuaternion(rotX, rotY, rotZ, rotW);
 
+		g_CamData.posX = camPos.x;
+		g_CamData.posY = camPos.y;
+		g_CamData.posZ = camPos.z;
 
-		CameraData camera;
-
-		camera.posX = camPos.x;
-		camera.posY = camPos.y;
-		camera.posZ = camPos.z;
-
-		camera.lookAtX = rotX;
-		camera.lookAtY = rotY;
-		camera.lookAtZ = rotZ;
-		camera.lookAtW = rotW;
+		g_CamData.lookAtX = rotX;
+		g_CamData.lookAtY = rotY;
+		g_CamData.lookAtZ = rotZ;
+		g_CamData.lookAtW = rotW;
 
 		MString a;
 
@@ -144,10 +146,22 @@ void cameraViewChanged(const MString &str, void *clientData) {
 		a += " ,";
 
 
-		MGlobal::displayInfo(a);
+		//MGlobal::displayInfo(a);
+
+		clock_t timer;
+
+		timer = clock() - elapsedTime;
+
+		if (timer > 1000 / fps) 
+		{
+			prepareCameraMessage(g_CamData);
+
+			elapsedTime = clock();
+		}
 
 
-		prepareCameraMessage(camera);
+
+		g_CamDataUpdated = true;
 	}
 
 
@@ -925,7 +939,7 @@ EXPORT MStatus initializePlugin(MObject obj)
 
 	MGlobal::displayInfo("Maya plugin loaded! 12345");
 
-	float fps = 30;
+
 
 	MStatus status = MS::kSuccess;
 	MCallbackId id = MTimerMessage::addTimerCallback(1 / fps, TimerCallBack, NULL, &status);
