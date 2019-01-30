@@ -236,7 +236,7 @@ void MayaViewer::createMesh(char* data)
 	mesh->setVertexData(vertices, 0, indiceCount);
 
 	Model* model = Model::create(mesh);
-	Material* mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "POINT_LIGHT_COUNT 1");
+	Material* mat = model->setMaterial("res/shaders/textured.vert", "res/shaders/textured.frag", "POINT_LIGHT_COUNT 1");
 
 	SAFE_RELEASE(mesh);
 
@@ -499,78 +499,94 @@ void MayaViewer::updateMaterial(char * data)
 
 	if (md.isTexture)
 	{
-		
-		Model* model = dynamic_cast<Model*>(_scene->findNode(md.name)->getDrawable());
-
-		if (model)
-		{
-			Material* mat = model->getMaterial();
-
-			if (mat)
-			{
-				MaterialParameter* textureParam = mat->getParameter("u_diffuseTexture");
-
-				if (textureParam)
-				{
-					textureParam->setValue(md.texturePath, true);
-
-				}
-
-			}
-
-		}
-
-	}
-	else {
-
+		// Material in maya gets created before the node in gameplay, check if there is a node first
 		Node* node = _scene->findNode(md.name);
 		Model* model = nullptr;
+
 		if (node)
 		{
 			model = dynamic_cast<Model*>(node->getDrawable());
 
+			if (model)
+			{
+				replaceMaterialTexture(model, md);
+			}
+
 		}
+	}
+	else {
 
-		if (model)
+		// Material in maya gets created before the node in gameplay, check if there is a node first
+		Node* node = _scene->findNode(md.name);
+		Model* model = nullptr;
+
+		if (node)
 		{
-			Vector4 color;
-			color = md.rgb;
-			color.w = 1.0f;
+			model = dynamic_cast<Model*>(node->getDrawable());
 
-			//replaceMaterial(model, color);
+			if (model)
+			{
+				Vector4 color;
+				color = md.rgb;
+				color.w = 1.0f;
+
+				replaceMaterialColor(model, color);
 
 
-			Material * mat = model->getMaterial();
+				/*Material * mat = model->getMaterial();
 
-			MaterialParameter* colorParam = mat->getParameter("u_diffuseColor");
-			colorParam->setValue(color);
+				MaterialParameter* colorParam = mat->getParameter("u_diffuseColor");
+				colorParam->setValue(color);*/
+			}
 		}
 	}
 
 
 }
 
-void MayaViewer::replaceMaterial(Model * model, Vector3 color)
+void MayaViewer::replaceMaterialColor(Model * model, Vector4 color)
 {
+	//Material * mat = model->getMaterial();
 
-	//Material * mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "POINT_LIGHT_COUNT 1");
+	Material * mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "POINT_LIGHT_COUNT 1");
 
 
-	Material * mat = model->getMaterial();
-
-	/*mat->setParameterAutoBinding("u_worldViewProjectionMatrix", "WORLD_VIEW_PROJECTION_MATRIX");
+	mat->setParameterAutoBinding("u_worldViewProjectionMatrix", "WORLD_VIEW_PROJECTION_MATRIX");
 	mat->setParameterAutoBinding("u_inverseTransposeWorldViewMatrix", "INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX");
-	mat->getParameter("u_ambientColor")->setValue(Vector3(0.3f, 0.3f, 0.3f));*/
-	//mat->getParameter("u_diffuseColor")->setValue(Vector3(0.0f, 0.3f, 1.0f));
+	mat->getParameter("u_ambientColor")->setValue(Vector3(0.3f, 0.3f, 0.3f));
+	mat->getParameter("u_diffuseColor")->setValue(color);
 
-	//mat->getParameter("u_pointLightColor[0]")->setValue(_scene->findNode("light")->getLight()->getColor());
-	////mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
-	//mat->getParameter("u_pointLightPosition[0]")->bindValue(_scene->findNode("light"), &Node::getTranslationWorld);
-	//mat->getParameter("u_pointLightRangeInverse[0]")->bindValue(_scene->findNode("light")->getLight(), &Light::getRangeInverse);
+	mat->getParameter("u_pointLightColor[0]")->setValue(_scene->findNode("light")->getLight()->getColor());
+	//mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
+	mat->getParameter("u_pointLightPosition[0]")->bindValue(_scene->findNode("light"), &Node::getTranslationWorld);
+	mat->getParameter("u_pointLightRangeInverse[0]")->bindValue(_scene->findNode("light")->getLight(), &Light::getRangeInverse);
 
-	//mat->getStateBlock()->setCullFace(true);
-	//mat->getStateBlock()->setDepthTest(true);
-	//mat->getStateBlock()->setDepthWrite(true);
+	mat->getStateBlock()->setCullFace(true);
+	mat->getStateBlock()->setDepthTest(true);
+	mat->getStateBlock()->setDepthWrite(true);
+}
+
+void MayaViewer::replaceMaterialTexture(Model * model, MaterialData md)
+{
+	Material * mat = model->setMaterial("res/shaders/textured.vert", "res/shaders/textured.frag", "POINT_LIGHT_COUNT 1");
+
+
+	mat->setParameterAutoBinding("u_worldViewProjectionMatrix", "WORLD_VIEW_PROJECTION_MATRIX");
+	mat->setParameterAutoBinding("u_inverseTransposeWorldViewMatrix", "INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX");
+	mat->getParameter("u_ambientColor")->setValue(Vector3(0.3f, 0.3f, 0.3f));
+	//mat->getParameter("u_diffuseColor")->setValue(color);
+
+	Texture::Sampler* sampler = mat->getParameter("u_diffuseTexture")->setValue(md.texturePath, true);
+	sampler->setFilterMode(Texture::LINEAR_MIPMAP_LINEAR, Texture::LINEAR);
+
+	mat->getParameter("u_pointLightColor[0]")->setValue(_scene->findNode("light")->getLight()->getColor());
+	//mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
+	mat->getParameter("u_pointLightPosition[0]")->bindValue(_scene->findNode("light"), &Node::getTranslationWorld);
+	mat->getParameter("u_pointLightRangeInverse[0]")->bindValue(_scene->findNode("light")->getLight(), &Light::getRangeInverse);
+
+	mat->getStateBlock()->setCullFace(true);
+	mat->getStateBlock()->setDepthTest(true);
+	mat->getStateBlock()->setDepthWrite(true);
 }
 
 void MayaViewer::nodeRemoved(char * data)

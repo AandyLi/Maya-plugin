@@ -29,7 +29,8 @@ private:
 	void updateCamera(char * data);
 	void updateMaterial(char * data);
 	void nodeRemoved(char * data);
-	void replaceMaterial(Model* model, Vector3 color);
+	void replaceMaterialColor(Model* model, Vector4 color);
+	void replaceMaterialTexture(Model * model, MaterialData md);
 
 	Scene* _scene;
 	bool _wireframe;
