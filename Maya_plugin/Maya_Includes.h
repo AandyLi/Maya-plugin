@@ -28,6 +28,7 @@
 #include <maya/MFnPointLight.h>
 #include <maya/MSelectionList.h>
 #include <maya/MItDependencyNodes.h>
+#include <maya/MRenderUtil.h>
 
 // Wrappers
 #include <maya/MGlobal.h>
@@ -53,3 +54,4 @@
 #pragma comment(lib,"Foundation.lib")
 #pragma comment(lib,"OpenMaya.lib")
 #pragma comment(lib,"OpenMayaUI.lib")
+#pragma comment(lib,"OpenMayaRender.lib")

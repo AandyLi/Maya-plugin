@@ -236,7 +236,7 @@ void MayaViewer::createMesh(char* data)
 	mesh->setVertexData(vertices, 0, indiceCount);
 
 	Model* model = Model::create(mesh);
-	Material* mat = model->setMaterial("res/shaders/textured.vert", "res/shaders/textured.frag", "POINT_LIGHT_COUNT 1");
+	Material* mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "POINT_LIGHT_COUNT 1");
 
 	SAFE_RELEASE(mesh);
 
@@ -245,24 +245,25 @@ void MayaViewer::createMesh(char* data)
 	mat->setParameterAutoBinding("u_worldViewProjectionMatrix", "WORLD_VIEW_PROJECTION_MATRIX");
 	mat->setParameterAutoBinding("u_inverseTransposeWorldViewMatrix", "INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX");
 	// Set the ambient color of the material.
-	mat->getParameter("u_ambientColor")->setValue(Vector3(0.2f, 0.2f, 0.2f));
+	mat->getParameter("u_ambientColor")->setValue(Vector3(0.3f, 0.3f, 0.3f));
 
 
 	// Create a white light.
 
-	Vector3 col(0.75f, 0.75f, 0.75f);
-	Light* light = Light::createPoint(col, 300.0f);
+	Vector3 col(1.0f, 1.0f, 1.0f);
+	Light* light = Light::createPoint(col, 16.0f);
 	Node* lightNode = _scene->addNode("light");
 	lightNode->setLight(light);
 	// Release the light because the node now holds a reference to it.
 	SAFE_RELEASE(light);
-	lightNode->translateUp(2.0f);
+	lightNode->translateUp(1.0f);
+	lightNode->translateLeft(3.0f);
 	// Bind the light's color and direction to the material.
 	mat->getParameter("u_pointLightColor[0]")->setValue(lightNode->getLight()->getColor());
 	//mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
-	mat->getParameter("u_pointLightPosition[0]")->bindValue(lightNode, &Node::getTranslationView);
-	mat->getParameter("u_pointLightRangeInverse[0]")->setValue(lightNode->getLight()->getRangeInverse());
-	mat->getParameter("u_diffuseColor")->setValue(Vector4(0.4f, 0.4f, 0.4f, 1.0f));
+	mat->getParameter("u_pointLightPosition[0]")->bindValue(lightNode, &Node::getTranslationWorld);
+	mat->getParameter("u_pointLightRangeInverse[0]")->bindValue(lightNode->getLight(), &Light::getRangeInverse);
+	mat->getParameter("u_diffuseColor")->setValue(Vector4(0.4f, 0.4f, 0.1f, 1.0f));
 
 	//// Load the texture from file.
 	Texture::Sampler* sampler = mat->getParameter("u_diffuseTexture")->setValue("res/png/crate.png", true);
@@ -280,6 +281,7 @@ void MayaViewer::createMesh(char* data)
 	string name = mlist.meshName;
 
 	_scene->addNode(name.c_str())->setDrawable(model);
+
 
 	string a = name.c_str();
 
@@ -379,16 +381,211 @@ void MayaViewer::updateCamera(char * data)
 	localHead += cdSize;
 
 	Vector3 camTrans;
-
 	camTrans.x = cd.posX;
 	camTrans.y = cd.posY;
 	camTrans.z = cd.posZ;
 
-	_scene->findNode("camera")->setTranslation(camTrans);
-	_scene->findNode("camera")->setRotation(cd.lookAtX, cd.lookAtY, cd.lookAtZ, cd.lookAtW);
+
+	/*auto setValues = [this](Vector3 camTrans, CameraData cd) {
+		_scene->findNode("camera")->setTranslation(camTrans);
+		_scene->findNode("camera")->setRotation(cd.lookAtX, cd.lookAtY, cd.lookAtZ, cd.lookAtW);
+	};*/
+
+
+	// Only update values
+	//_scene->findNode("Ocamera")->setTranslation(camTrans);
+	//_scene->findNode("Ocamera")->setRotation(cd.lookAtX, cd.lookAtY, cd.lookAtZ, cd.lookAtW);
+	//_scene->findNode("Ocamera")->getCamera()->setZoomX(cd.zoom);
+	//_scene->findNode("Ocamera")->getCamera()->setZoomY(cd.zoom);
+	//_scene->setActiveCamera(_scene->findNode("Ocamera")->getCamera());
+
+
+	
+
+	if (cd.isOrtho) // If we want orthographic camera
+	{
+		
+		if (isViewerCamOrtho) // Check if we already have it
+		{
+			// Only update values
+			_scene->findNode("Ocamera")->setTranslation(camTrans);
+			_scene->findNode("Ocamera")->setRotation(cd.lookAtX, cd.lookAtY, cd.lookAtZ, cd.lookAtW);
+			_scene->findNode("Ocamera")->getCamera()->setZoomX(cd.zoom);
+			_scene->findNode("Ocamera")->getCamera()->setZoomY(cd.zoom);
+			_scene->findNode("Ocamera")->getCamera()->setAspectRatio(getAspectRatio());
+			_scene->setActiveCamera(_scene->findNode("Ocamera")->getCamera());
+
+			//setValues(camTrans, cd);
+		}
+		else { // If not
+			if (!addedOCam)
+			{
+
+				// Create orthographic camera
+				Camera* camera = Camera::createOrthographic(cd.zoom, cd.zoom, getAspectRatio(), cd.nearPlane, cd.farPlane);
+				Node* cameraNode = _scene->addNode("Ocamera");
+
+				// Attach the camera to a node. This determines the position of the camera.
+				cameraNode->setCamera(camera);
+
+				// Make this the active camera of the scene.
+				_scene->setActiveCamera(camera);
+				SAFE_RELEASE(camera);
+
+				cameraNode->setTranslation(camTrans);
+				cameraNode->setRotation(cd.lookAtX, cd.lookAtY, cd.lookAtZ, cd.lookAtW);
+				cameraNode->getCamera()->setZoomX(cd.zoom);
+				cameraNode->getCamera()->setZoomY(cd.zoom);
+
+				//setValues(camTrans, cd);
+
+				addedOCam = true;
+
+			}
+			isViewerCamOrtho = !isViewerCamOrtho;
+		}
+	}
+	else { // If we want perspective camera
+		if (isViewerCamOrtho) // Check if we need to switch back
+		{
+			if (!addedPCam)
+			{
+
+				// Create perspective camera
+				Camera* camera = Camera::createPerspective(cd.fov, getAspectRatio(), cd.nearPlane, cd.farPlane);
+				Node* cameraNode = _scene->addNode("Pcamera");
+
+				// Attach the camera to a node. This determines the position of the camera.
+				cameraNode->setCamera(camera);
+
+				// Make this the active camera of the scene.
+				_scene->setActiveCamera(camera);
+				SAFE_RELEASE(camera);
+
+				cameraNode->setTranslation(camTrans);
+				cameraNode->setRotation(cd.lookAtX, cd.lookAtY, cd.lookAtZ, cd.lookAtW);
+
+				//setValues(camTrans, cd);
+				addedPCam = true;
+			}
+
+			isViewerCamOrtho = !isViewerCamOrtho;
+		}
+		else { // If not
+			// Only update values
+			_scene->findNode("Pcamera")->setTranslation(camTrans);
+			_scene->findNode("Pcamera")->setRotation(cd.lookAtX, cd.lookAtY, cd.lookAtZ, cd.lookAtW);
+			_scene->findNode("Pcamera")->getCamera()->setFieldOfView(cd.fov + 30);
+			_scene->findNode("Pcamera")->getCamera()->setAspectRatio(getAspectRatio());
+			_scene->setActiveCamera(_scene->findNode("Pcamera")->getCamera());
+			//setValues(camTrans, cd);
+		}
+	}
+
+	
 
 
 }
+
+void MayaViewer::updateMaterial(char * data)
+{
+	size_t headerSize = sizeof(Header);
+	size_t mdSize = sizeof(MaterialData);
+	size_t localHead = headerSize;
+
+	MaterialData md;
+	memcpy(&md, data + localHead, mdSize);
+	localHead += mdSize;
+
+	if (md.isTexture)
+	{
+		
+		Model* model = dynamic_cast<Model*>(_scene->findNode(md.name)->getDrawable());
+
+		if (model)
+		{
+			Material* mat = model->getMaterial();
+
+			if (mat)
+			{
+				MaterialParameter* textureParam = mat->getParameter("u_diffuseTexture");
+
+				if (textureParam)
+				{
+					textureParam->setValue(md.texturePath, true);
+
+				}
+
+			}
+
+		}
+
+	}
+	else {
+
+		Node* node = _scene->findNode(md.name);
+		Model* model = nullptr;
+		if (node)
+		{
+			model = dynamic_cast<Model*>(node->getDrawable());
+
+		}
+
+		if (model)
+		{
+			Vector4 color;
+			color = md.rgb;
+			color.w = 1.0f;
+
+			//replaceMaterial(model, color);
+
+
+			Material * mat = model->getMaterial();
+
+			MaterialParameter* colorParam = mat->getParameter("u_diffuseColor");
+			colorParam->setValue(color);
+		}
+	}
+
+
+}
+
+void MayaViewer::replaceMaterial(Model * model, Vector3 color)
+{
+
+	//Material * mat = model->setMaterial("res/shaders/colored.vert", "res/shaders/colored.frag", "POINT_LIGHT_COUNT 1");
+
+
+	Material * mat = model->getMaterial();
+
+	/*mat->setParameterAutoBinding("u_worldViewProjectionMatrix", "WORLD_VIEW_PROJECTION_MATRIX");
+	mat->setParameterAutoBinding("u_inverseTransposeWorldViewMatrix", "INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX");
+	mat->getParameter("u_ambientColor")->setValue(Vector3(0.3f, 0.3f, 0.3f));*/
+	//mat->getParameter("u_diffuseColor")->setValue(Vector3(0.0f, 0.3f, 1.0f));
+
+	//mat->getParameter("u_pointLightColor[0]")->setValue(_scene->findNode("light")->getLight()->getColor());
+	////mat->getParameter("u_directionalLightDirection[0]")->bindValue(lightNode, &Node::getForwardVectorWorld);
+	//mat->getParameter("u_pointLightPosition[0]")->bindValue(_scene->findNode("light"), &Node::getTranslationWorld);
+	//mat->getParameter("u_pointLightRangeInverse[0]")->bindValue(_scene->findNode("light")->getLight(), &Light::getRangeInverse);
+
+	//mat->getStateBlock()->setCullFace(true);
+	//mat->getStateBlock()->setDepthTest(true);
+	//mat->getStateBlock()->setDepthWrite(true);
+}
+
+void MayaViewer::nodeRemoved(char * data)
+{
+	size_t headerSize = sizeof(Header);
+	size_t meshSize = sizeof(MeshInfo);
+	size_t localHead = headerSize;
+
+	MeshInfo mesh;
+	memcpy(&mesh, data + localHead, meshSize);
+	localHead += meshSize;
+
+	_scene->removeNode(_scene->findNode(mesh.name));
+}
+
 
 void MayaViewer::initialize()
 {
@@ -396,14 +593,26 @@ void MayaViewer::initialize()
 	_scene = Scene::create();
 
 	// Create the camera.
-	Camera* camera = Camera::createPerspective(75.0f, getAspectRatio(), 1.0f, 100.0f);
+	Camera* camera = Camera::createPerspective(75.0f, getAspectRatio(), 1.0f, 10000.0f);
 	Node* cameraNode = _scene->addNode("camera");
+
+	Camera* cameraP = Camera::createPerspective(75.0f, getAspectRatio(), 1.0f, 100.0f);
+	Node* cameraNodeP = _scene->addNode("Pcamera");
+	cameraNodeP->setCamera(cameraP);
+
+
+	/*
+	Camera* cameraO = Camera::createOrthographic(10.0f, 10.0f, getAspectRatio(), 1.0f, 10000.0f);
+	Node* cameraNodeO = _scene->addNode("Ocamera");
+	cameraNodeO->setCamera(cameraO);
+	*/
 
 	// Attach the camera to a node. This determines the position of the camera.
 	cameraNode->setCamera(camera);
 
+
 	// Make this the active camera of the scene.
-	_scene->setActiveCamera(camera);
+	_scene->setActiveCamera(cameraP);
 	SAFE_RELEASE(camera);
 
 	// Move the camera to look at the origin.
@@ -528,6 +737,13 @@ void MayaViewer::getMayaData()
 	case MSG_TYPE::Camera_Update:
 		updateCamera(data);
 		break;
+	case MSG_TYPE::Material_Change:
+		updateMaterial(data);
+		break;
+	case MSG_TYPE::Node_Removed:
+		nodeRemoved(data);
+		break;
+
 
 	}
 

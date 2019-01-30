@@ -8,8 +8,21 @@ using namespace std;
 	Translation,
 	Scale,
 	Rotation,
-	Camera_Update
+	Camera_Update,
+	Material_Change,
+	Node_Removed
 };
+
+ struct MaterialData {
+	 char name[50];
+	 char texturePath[100];
+	 char matName[50];
+
+	 float rgb[3];
+
+	 bool isTexture;
+ };
+
 
  struct CameraData {
 	 float posX;
@@ -20,6 +33,16 @@ using namespace std;
 	 double lookAtY;
 	 double lookAtZ;
 	 double lookAtW;
+
+	 float nearPlane;
+	 float farPlane;
+
+	 float fov;
+
+	 float aspectRatio;
+
+	 float zoom;
+	 bool isOrtho;
  };
 
 struct Vertex {

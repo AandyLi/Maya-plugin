@@ -27,6 +27,9 @@ private:
 	void scaleMesh(char* data);
 	void rotateMesh(char * data);
 	void updateCamera(char * data);
+	void updateMaterial(char * data);
+	void nodeRemoved(char * data);
+	void replaceMaterial(Model* model, Vector3 color);
 
 	Scene* _scene;
 	bool _wireframe;
@@ -34,6 +37,10 @@ private:
 	bool onceBool = true;
 	bool test();
 	bool test2 = false;
+	bool isViewerCamOrtho = false;
+
+	bool addedOCam = false;
+	bool addedPCam = true;
 
 	void getMayaData();
 

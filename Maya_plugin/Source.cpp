@@ -28,6 +28,10 @@ void prepareRotationMessage(RotationData rd);
 
 void prepareCameraMessage(CameraData cam);
 
+void prepareMaterialMessage(MaterialData md);
+
+void prepareRemovedMessage(MeshInfo mesh);
+
 // Declarations end *****************************************
 
 MCallbackId meshNodeCallbackID;
@@ -134,19 +138,36 @@ void cameraViewChanged(const MString &str, void *clientData) {
 		g_CamData.lookAtZ = rotZ;
 		g_CamData.lookAtW = rotW;
 
+		g_CamData.nearPlane = cam.nearClippingPlane();
+		g_CamData.farPlane = cam.farClippingPlane();
+
+		g_CamData.fov = cam.horizontalFieldOfView();
+
+		g_CamData.zoom = cam.orthoWidth();
+
+		g_CamData.aspectRatio = cam.aspectRatio();
+
+		if (cam.isOrtho())
+		{
+			g_CamData.isOrtho = true;
+		}
+		else {
+			g_CamData.isOrtho = false;
+		}
+
 		MString a;
 
-		a += rotX;
+		a += camPos.x;
 		a += " ,";
-		a += rotY;
+		a += camPos.y;
 		a += " ,";
-		a += rotZ;
+		a += camPos.z;
 		a += " ,";
-		a += rotW;
+		a += cam.aspectRatio();
 		a += " ,";
 
 
-		//MGlobal::displayInfo(a);
+		MGlobal::displayInfo(a);
 
 		clock_t timer;
 
@@ -783,7 +804,7 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 	}
 
 
-
+	/*
 	if (plug.partialName(0, 0, 0, 0, 0, 1) == "translateX")
 	{
 		if (msg & MNodeMessage::AttributeMessage::kAttributeSet) {
@@ -807,19 +828,176 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 			MGlobal::displayInfo(MString("Transform node changed in z axis"));
 		}
 	}
+	*/
 
+
+	// Get material
+
+	// texture
+		MGlobal::displayInfo(MString("--- kFiletexture! ----"));
+
+		float rgbArr[3];
+
+		MStatus meshStatus;
+		MFnMesh mesh1 = plug.node(&meshStatus);
+		MString meshName = getNodeName(mesh1.parent(0));
+
+		MObjectArray PolygonSets;
+		MObjectArray PolygonComponents;
+		unsigned int instanceNum = mesh1.dagPath().instanceNumber();
+
+		MObject shaderNode = MObject::kNullObj;
+		MObject connectedObject = MObject::kNullObj;
+
+		if (!mesh1.getConnectedSetsAndMembers(instanceNum, PolygonSets, PolygonComponents, true)) {
+			//MGlobal::displayError("MFnMesh::getConnectedSetsAndMembers");
+			
+		}
+
+		MPlug shaderPlug; 
+		if (PolygonSets.length() > 0)
+		{
+			MObject setNode = PolygonSets[0];
+
+			MFnDependencyNode depNode(setNode);
+
+			shaderPlug = depNode.findPlug("surfaceShader");
+
+			if (!shaderPlug.isNull()) {
+				MPlugArray connectedPlugs;
+				MGlobal::displayInfo(MString("SufaceShader found! --- --- -- - - "));
+				if (shaderPlug.connectedTo(connectedPlugs, true, false) && connectedPlugs.length() == 1)
+				{
+					MGlobal::displayInfo(MString("----- shaderPlug.connectedTo "));
+
+					const MPlug& connectedPlug = connectedPlugs[0];
+					shaderNode = connectedPlug.node();
+				}
+			}
+		}
+
+
+
+		/*
+		MPlugArray mPlugArray1;
+		depNode.getConnections(mPlugArray1);
+
+		for (int i = 0; i < mPlugArray1.length(); i++)
+		{
+			MGlobal::displayInfo(MString("mPlugArray1 name: "));
+			MGlobal::displayInfo(mPlugArray1[i].name());
+
+			MPlugArray mPlugArray2;
+			mPlugArray1[i].connectedTo(mPlugArray2, 1, 0);
+
+
+			for (int j = 0; j < mPlugArray2.length(); j++)
+			{
+				MGlobal::displayInfo(MString("mPlugArray2 name: "));
+				MGlobal::displayInfo(mPlugArray2[j].name());
+				if (mPlugArray2[j].node().hasFn(MFn::Type::kLambert))
+				{
+					MGlobal::displayInfo(MString("--- AKJSDHKASH DKAHSD JAHDKA  SDJAHD k! ----"));
+					MObject shaderNode = mPlugArray2[j].node();
+					cplug = MFnDependencyNode(shaderNode).findPlug("color"); // shader node
+				}
+			}
+		}
+		*/
+
+
+		MPlug cPlug = MFnDependencyNode(shaderNode).findPlug("color");
+		if (!cPlug.isNull())
+		{
+			MPlugArray plugArray;
+			if (cPlug.connectedTo(plugArray, true, false) && plugArray.length() == 1)
+			{
+				MGlobal::displayInfo(MString("----- cplug.connectedTo "));
+				// Check for a file texture node connection
+				//
+				const MPlug& connectedPlug = plugArray[0];
+				connectedObject = connectedPlug.node();
+				if (connectedObject.hasFn(MFn::kFileTexture))
+				{
+					// Get the name of the file texture image and acquire a texture to use
+					MString fileTextureName;
+					MStatus tempStatus;
+					MRenderUtil::exactFileTextureName(connectedObject, fileTextureName, &tempStatus);
+
+					MGlobal::displayInfo(MString("----- The texture is: " + fileTextureName));
+					MGlobal::displayInfo(MString("----- Name of mesh: " + meshName));
+					MGlobal::displayInfo(MString("----- The material name is: " + MFnDependencyNode(shaderNode).name()));		
+
+					MaterialData matData;
+
+					
+					strncpy(matData.name, meshName.asChar(), sizeof(matData.name));
+					strncpy(matData.texturePath, fileTextureName.asChar(), sizeof(matData.texturePath));
+					strncpy(matData.matName, MFnDependencyNode(shaderNode).name().asChar(), sizeof(matData.matName));
+
+					matData.isTexture = true;
+
+					prepareMaterialMessage(matData);
+				}
+				
+			}
+			else {
+				MFnDependencyNode(shaderNode).findPlug("colorR").getValue(rgbArr[0]);
+				MFnDependencyNode(shaderNode).findPlug("colorG").getValue(rgbArr[1]);
+				MFnDependencyNode(shaderNode).findPlug("colorB").getValue(rgbArr[2]);
+
+				MString colorStr;
+				colorStr = "R: ";
+				colorStr += rgbArr[0];
+				colorStr += ", G: ";
+				colorStr += rgbArr[1];
+				colorStr += ", B: ";
+				colorStr += rgbArr[2];
+
+				MGlobal::displayInfo(MString("----- Only color found: " + colorStr));
+
+				MaterialData matData;
+
+				matData.rgb[0] = rgbArr[0];
+				matData.rgb[1] = rgbArr[1];
+				matData.rgb[2] = rgbArr[2];
+
+				strncpy(matData.name, meshName.asChar(), sizeof(matData.name));
+				strncpy(matData.matName, MFnDependencyNode(shaderNode).name().asChar(), sizeof(matData.matName));
+				matData.isTexture = false;
+
+
+				prepareMaterialMessage(matData);
+			}
+		}
+	
+
+
+
+	/*
+	 MStatus status;
+        MFnDependencyNode node(object, &status);
+        if (status)
+        {
+            node.findPlug("colorR").getValue(fDiffuseColor[0]);
+            node.findPlug("colorG").getValue(fDiffuseColor[1]);
+            node.findPlug("colorB").getValue(fDiffuseColor[2]);
+            node.findPlug("diffuse").getValue(fDiffuse);
+            node.findPlug("transparency").getValue(fTransparency);
+            fDiffuseColor[3] = 1.0f - fTransparency;
+	*/
 
 
 	MStatus indexStatus;
 	int index = plug.logicalIndex(&indexStatus);
 
-	MStatus meshStatus;
-	MFnMesh mesh = plug.node(&meshStatus);
+	MStatus meshStatus2;
+	MFnMesh mesh = plug.node(&meshStatus2);
 	MPoint point;
 
 	float arr[4];
 
-	if (meshStatus == MS::kSuccess)
+	if (meshStatus2 == MS::kSuccess)
 	{
 		mesh.getPoint(index, point);
 	}
@@ -838,6 +1016,34 @@ void nodeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPl
 		}
 		MGlobal::displayInfo("New value: " + p);
 	}
+}
+
+void prepareMaterialMessage(MaterialData md) {
+	Header h;
+
+	size_t headerSize = sizeof(Header);
+	size_t mdSize = sizeof(md);
+
+	size_t localHead = 0;
+
+	h.msgType = MSG_TYPE::Material_Change;
+	h.length = mdSize;
+
+
+	char* data = new char[headerSize + h.length];
+
+
+	// Header
+	memcpy(data, &h, headerSize);
+	localHead += headerSize;
+
+	// md
+	memcpy(data + localHead, &md, mdSize);
+
+
+	comLib->send(data, headerSize + h.length);
+
+	delete[] data;
 }
 
 void prepareTranslationMessage(TranslationData td) {
@@ -925,6 +1131,53 @@ void prepareRotationMessage(RotationData rd) {
 	delete[] data;
 }
 
+void nodeRemoved(MObject &node, void* clientData) {
+
+	if (node.hasFn(MFn::kTransform))
+	{
+		MStatus status;
+		MFnTransform mesh(node, &status);
+		if (status == MS::kSuccess)
+		{
+			MString nodeName = "|";
+			nodeName += mesh.name();
+			MeshInfo meshinfo;
+
+			strncpy(meshinfo.name, nodeName.asChar(), sizeof(meshinfo.name));
+
+			prepareRemovedMessage(meshinfo);
+		}
+
+	}
+}
+
+void prepareRemovedMessage(MeshInfo mesh) {
+	Header h;
+
+	size_t headerSize = sizeof(Header);
+	size_t meshSize = sizeof(mesh);
+
+	size_t localHead = 0;
+
+	h.msgType = MSG_TYPE::Node_Removed;
+	h.length = meshSize;
+
+
+	char* data = new char[headerSize + h.length];
+
+
+	// Header
+	memcpy(data, &h, headerSize);
+	localHead += headerSize;
+
+	// md
+	memcpy(data + localHead, &mesh, meshSize);
+
+
+	comLib->send(data, headerSize + h.length);
+
+	delete[] data;
+}
 
 // called when the plugin is loaded
 EXPORT MStatus initializePlugin(MObject obj)
@@ -947,6 +1200,10 @@ EXPORT MStatus initializePlugin(MObject obj)
 	MStatus status2;
 	// Node added
 	MCallbackId id2 = MDGMessage::addNodeAddedCallback(NodeAdded, kDefaultNodeType, NULL, &status2);
+
+	// Node removed
+	MStatus removedStatus;
+	MCallbackId removedId = MDGMessage::addNodeRemovedCallback(nodeRemoved, kDefaultNodeType, NULL, &removedStatus);
 
 	// node name changed
 	MStatus nodeNameChangedStatus;
@@ -979,6 +1236,13 @@ EXPORT MStatus initializePlugin(MObject obj)
 	if (status2 == MS::kSuccess)
 	{
 		if (myCallbackArray.append(id2) == MS::kSuccess)
+		{
+
+		}
+	}
+	if (removedStatus == MS::kSuccess)
+	{
+		if (myCallbackArray.append(removedId) == MS::kSuccess)
 		{
 
 		}
