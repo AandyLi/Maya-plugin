@@ -8,7 +8,7 @@
 #include <string>
 #include <Data.h>
 using namespace std;
-#define BUFF_SIZE 1 * 1 << 14
+#define BUFF_SIZE 1 * 1 << 20
 class comLib
 {
 

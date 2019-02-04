@@ -7,7 +7,7 @@
 #include <tchar.h>
 #include "Data.h"
 
-#define BUFF_SIZE 1 * 1 << 14
+#define BUFF_SIZE 1 * 1 << 20
 class ComLib
 {
 
