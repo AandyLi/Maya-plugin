@@ -48,6 +48,7 @@ void ComLib::createHeadTailFileMap()
 	}
 }
 
+
 ComLib::ComLib()
 {	
 	createFileMap();
@@ -86,7 +87,44 @@ void ComLib::test()
 	delete[] msg;
 }
 
-void ComLib::send(const void * data, size_t length)
+bool ComLib::createMsg(const void * data, size_t length, ComLib_TYPE type)
+{
+	ComlibHeader h;
+
+	if (type == DUMMY)
+	{
+		if (!(*head >= (BUFF_SIZE)))
+		{
+			h.comlibType = type;
+			
+
+			memcpy(pBuf + *head, &h, sizeof(h));
+			memcpy(pBuf + sizeof(h) + *head, data, (BUFF_SIZE) - *head - sizeof(ComlibHeader));
+
+			if (((ComlibHeader*)(pBuf + *head))->comlibType == DUMMY)
+			{
+				return false;
+			}
+		}
+
+		return false;
+	}
+	else {
+		h.comlibType = type;
+		
+
+		memcpy(pBuf + *head, &h, sizeof(h));
+		memcpy(pBuf + sizeof(h) + *head, data, length);
+
+
+		int multiple = ceil((length + sizeof(ComlibHeader)) / 64) + 1;
+
+		*head += 64 * multiple;
+	}
+
+	return true;
+}
+bool ComLib::send(const void * data, size_t length)
 {
 
 	Header h;
@@ -97,8 +135,47 @@ void ComLib::send(const void * data, size_t length)
 
 	//*head += headerSize;
 
-	memcpy(pBuf + *head, data, length);
+	/*memcpy(pBuf + *head, data, length);
 
-	*head += length;
+	*head += length;*/
+
+	//-------------------------------------------------------
+
+	int multiple = ceil((length + sizeof(ComlibHeader)) / 64) + 1;
+
+	size_t msgFullSize = 64 * multiple;
+
+	if (*tail <= *head)
+	{
+		if (msgFullSize < ((BUFF_SIZE) - *head))
+		{
+			// create msg
+			return createMsg(data, length, NORMAL);
+		}
+		else if (msgFullSize == ((BUFF_SIZE) - *head) && *tail != 0) {
+			// Create msg
+			createMsg(data, length, NORMAL);
+			*head = 0;
+		}
+		else {
+			// Dummy
+			createMsg(data, length, DUMMY);
+			if (*tail != 0)
+			{
+				// reset to 0
+				*head = 0;
+			}
+		}
+	}
+	else {
+		if (*tail - *head - 128 > msgFullSize)
+		{
+			return createMsg(data, length, NORMAL);
+		}
+		else {
+			return false;
+		}
+	}
+
 
 }

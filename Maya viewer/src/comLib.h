@@ -8,7 +8,7 @@
 #include <string>
 #include <Data.h>
 using namespace std;
-#define BUFF_SIZE 1 * 1 << 20
+#define BUFF_SIZE 1 * 1 << 14
 class comLib
 {
 
@@ -32,5 +32,5 @@ public:
 	~comLib();
 
 	bool test();
-	void recieve(void* data);
+	bool recieve(void* data);
 };

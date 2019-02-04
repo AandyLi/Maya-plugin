@@ -7,7 +7,7 @@
 #include <tchar.h>
 #include "Data.h"
 
-#define BUFF_SIZE 1 * 1 << 20
+#define BUFF_SIZE 1 * 1 << 14
 class ComLib
 {
 
@@ -22,6 +22,7 @@ private:
 
 	void createFileMap();
 	void createHeadTailFileMap();
+	bool createMsg(const void* data, size_t length, ComLib_TYPE type);
 public:
 	ComLib();
 	~ComLib();
@@ -29,6 +30,6 @@ public:
 
 	void test();
 
-	void send(const void * data, size_t length);
+	bool send(const void * data, size_t length);
 };
 

@@ -13,6 +13,10 @@ using namespace std;
 	Node_Removed
 };
 
+ enum ComLib_TYPE {
+	 NORMAL,
+	 DUMMY
+ };
  struct MaterialData {
 	 char name[50];
 	 char texturePath[100];
@@ -95,6 +99,10 @@ struct MeshInfo {
 struct Header {
 	MSG_TYPE msgType;
 	int length;
+};
+
+struct ComlibHeader {
+	ComLib_TYPE comlibType;
 };
 
 struct vectorData {

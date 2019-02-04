@@ -94,44 +94,38 @@ bool comLib::test()
 	return false;
 }
 
-void comLib::recieve(void* data)
+bool comLib::recieve(void* data)
 {
 	if (fileMapFound)
 	{
 
 		if (*tail != *head)
 		{
+			if (((ComlibHeader*)(pBuf + *tail))->comlibType == DUMMY)
+			{
+				*tail = 0;
+				return false;
+			}
 
 			// get header data
 			Header h;
 			size_t headerSize = sizeof(h);
+			size_t comlibHeaderSize = sizeof(ComlibHeader);
 
-			memcpy(&h, pBuf + *tail, headerSize);
-
-			////debug
-			//MeshInfo m;
-
-			//memcpy(&m, pBuf + headerSize, sizeof(MeshInfo));
-
-			//vectorData vD;
-			//vD.v = new Vertex[m.nrOfVertices];
-			//vD.indices = new int[m.nrOfTriVertices];
-			//memcpy(&vD, pBuf + headerSize + sizeof(MeshInfo), sizeof(vectorData));
-
-			//vector<Vertex> vt;
-
-			//Vertex v;
-			//for (int i = 0; i < m.nrOfVertices; i++)
-			//{
-			//	// vector content (Vertex) has to be added back into a new vector
-			//	memcpy(&v, pBuf + headerSize + sizeof(MeshInfo) + (sizeof(Vertex) * i), sizeof(Vertex));
-			//	vt.push_back(v);
-			//}
+			memcpy(&h, pBuf + comlibHeaderSize + *tail, headerSize);
 
 			// copy data and header from pBuf to data
-			memcpy(data, pBuf + *tail, h.length + headerSize);
+			memcpy(data, pBuf + comlibHeaderSize + *tail, h.length + headerSize);
 
-			*tail += h.length + headerSize;
+			int multiple = ceil((h.length + headerSize + comlibHeaderSize) / 64) + 1;
+
+			*tail += 64 * multiple;
+
+			if (*tail == (BUFF_SIZE))
+			{
+				*tail = 0;
+			}
+
 		}
 	} 
 	
